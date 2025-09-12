@@ -108,7 +108,7 @@ src/
 ## 📝 Autor
 
 **LucaLzt**  
-[LinkedIn](https://www.linkedin.com/in/lucalzt/)  
+[LinkedIn](https://www.linkedin.com/in/luca-lazarte)  
 [GitHub](https://github.com/LucaLzt)
 
 ---
