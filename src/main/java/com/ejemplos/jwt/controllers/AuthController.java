@@ -2,16 +2,14 @@ package com.ejemplos.jwt.controllers;
 
 import com.ejemplos.jwt.models.dtos.LoginDTO;
 import com.ejemplos.jwt.models.dtos.RegisterDTO;
+import com.ejemplos.jwt.models.dtos.RefreshTokenRequestDTO;
 import com.ejemplos.jwt.services.AuthService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("api/auth")
@@ -42,6 +40,29 @@ public class AuthController {
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body("{\"error\": \"Error registering user\"}");
+        }
+    }
+
+    @PostMapping("/refresh-token")
+    public ResponseEntity<?> refreshToken(@RequestBody RefreshTokenRequestDTO dto) {
+        try {
+            return ResponseEntity.status(HttpStatus.OK)
+                    .body(service.refreshToken(dto));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body("{\"error\": \"" + e.getMessage() + "\"}");
+        }
+    }
+
+    @PostMapping("/logout")
+    public ResponseEntity<?> logout(@RequestBody RefreshTokenRequestDTO dto) {
+        try {
+            service.logout(dto.getRefreshToken());
+            return ResponseEntity.status(HttpStatus.OK)
+                    .body("{\"message\": \"Logged out successfully\"}");
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body("{\"error\": \"" + e.getMessage() + "\"}");
         }
     }
 
