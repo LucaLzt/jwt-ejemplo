@@ -39,6 +39,9 @@ public class User implements UserDetails {
     @Column(name = "role", nullable = false)
     private UserRole role;
 
+    @Column(name = "refresh_token", unique = true)
+    private String refreshToken;
+
     /**
      * Obtiene los roles asignados al usuario.
      *

@@ -11,5 +11,7 @@ public interface AuthService {
 
     AuthDTO login(LoginDTO login) throws Exception;
     AuthDTO register(RegisterDTO register) throws Exception;
+    AuthDTO refresh(String providedRefreshToken);
+    void logout(String userEmail);
 
 }
