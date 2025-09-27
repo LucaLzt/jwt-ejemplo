@@ -1,17 +1,24 @@
-# Proyecto JWT con Spring Boot
+# 🔐 Proyecto JWT con Spring Boot
 
-Este repositorio es un **ejemplo práctico** de implementación de autenticación y autorización en APIs REST usando **JWT (Json Web Token)** con **Spring Boot** y **Spring Security**. El objetivo es servir como guía y material de estudio para quienes deseen aprender buenas prácticas de seguridad en aplicaciones Java.
+Este repositorio implementa un sistema de **autenticación y autorización** en APIs REST usando **JSON Web Tokens (JWT)** con **Spring Boot 3** y **Spring Security**, incorporando:
+  - **Access Tokens** de vida corta para autenticar peticiones.
+  - **Refresh Tokens** de vida larga para renovar accesos sin re-login.
+  - Persistencia del refresh token en la base de datos.
+  - Endpoints de `login`, `register`, `refresh` y `logout`.
+El objetivo es ser una guía clara y práctica de cómo manejar JWTs de manera **segura y escalable** en aplicaciones Java modernas.
 
 ---
 
 ## 🚀 Características principales
 
-- Autenticación de usuarios vía JWT
-- Autorización de endpoints protegidos
-- Integración con Spring Security
-- Uso de MySQL como base de datos
-- Configuración flexible mediante variables de entorno o `application.properties`
-- Código comentado para facilitar el aprendizaje
+- Registro y login de usuarios con contraseña encriptada.
+- Emisión de **access + refresh tokens**.
+- Endpoint `/api/auth/refresh` para renovar access tokens usando refresh.
+- Endpoint `/api/auth/logout` para invalidar refresh tokens en servidor.
+- Integración completa con **Spring Security**.
+- **MySQL** como base de datos relacional.
+- **Docker Compose** para levantar app + MySQL.
+- Código ampliamente comentado para aprendizaje.
 
 ---
 
@@ -24,6 +31,7 @@ Este repositorio es un **ejemplo práctico** de implementación de autenticació
 - **JJWT** (`io.jsonwebtoken`)
 - **MySQL**
 - **Maven**
+- **Docker & Docker Compose**
 
 ---
 
@@ -36,46 +44,49 @@ git clone https://github.com/LucaLzt/jwt-ejemplo.git
 cd jwt-ejemplo
 ```
 
-### **2. Configurar la base de datos**
+### **2. Levantar con Docker**
 
-Asegúrate de tener MySQL corriendo y una base de datos creada. Puedes usar Docker con el archivo `docker-compose.yml` incluido:
+Con el `docker-compose.yml` incluido:
 
 ```bash
-docker compose up
+docker compose up --build
 ```
+Esto levanta:
+- `mysql` en el puerto `3307`
+- `spring-jwt-app` en el puerto `8080` 
 
-### **3. Configurar variables de entorno**
+### **3. Variables de entorno**
 
-Crea un archivo `.env` o edita el `application.properties` con tus datos de conexión y la clave secreta JWT:
-
+En `docker-compose.yml` ya están seteadas:
+```yaml
+JWT_SECRET: clave_secreta_super_segura_1234567890123456
+ACCESS_EXPIRATION: 900000        # 15 minutos
+REFRESH_EXPIRATION: 1209600000   # 14 días
+```
+Y el `application.properties` las usa así:
 ```properties
-spring.datasource.url=jdbc:mysql://localhost:3306/jwt_db?useSSL=false&serverTimezone=UTC
-spring.datasource.username=jwt_user
-spring.datasource.password=jwt_password
-jwt.secret=clave_secreta_super_segura_1234567890123456
-jwt.expiration=86400000
+jwt.secret=${JWT_SECRET}
+jwt.accessExpiration=${ACCESS_EXPIRATION}
+jwt.refreshExpiration=${REFRESH_EXPIRATION}
 ```
 
-### **4. Compilar y ejecutar la app**
+### **4. Compilar localmente (opcional)**
 
 ```bash
-./mvnw spring-boot:run
+mvn clean package -DskipTests
+java -jar target/app.jar
 ```
-o usando Docker:
-
-```bash
-docker build -t jwt-app .
-docker run -p 8080:8080 --env-file .env jwt-app
-```
-
 ---
 
-## 🔑 ¿Cómo funciona la autenticación JWT?
+## 🔑 Flujo de autenticación
 
-1. El usuario envía sus credenciales al endpoint `/authenticate`.
-2. Si son válidas, el backend genera y retorna un JWT.
-3. El cliente utiliza ese token en el header `Authorization: Bearer <token>` en cada request a endpoints protegidos.
-4. El backend valida el JWT en cada petición y autoriza el acceso según los datos del token.
+1. **Login / Register** → Devuelve `accessToken` + `refreshToken` en un `AuthDTO`.
+2. **Acceso a endpoints protegidos** → Se envía el `accessToken` en el header:
+```makefile
+Authorization: Bearer <accessToken>
+```
+3. **Token expirado** → El cliente usa el `refreshToken` en `/api/auth/refresh` para obtener un nuevo par de tokens.
+4. **Logout** → El servidor borra el refresh token de BD, invalidando la sesión.
 
 ---
 
@@ -83,16 +94,16 @@ docker run -p 8080:8080 --env-file .env jwt-app
 
 ```
 src/
-  main/
-    java/com/ejemplos/jwt/
-      controllers/        # Controladores REST
-      models/             # Entidades JPA
-      repositories/       # Repositorios JPA
-      services/           # Lógica de negocio
-      utils/              # Utilidades (JwtUtil, filtros, etc)
-    resources/
-      application.properties # Configuración
-  test/                    # Pruebas unitarias
+  main/java/com/ejemplos/jwt/
+    controllers/      # Endpoints REST (AuthController, etc.)
+    models/           # Entidades JPA (User)
+    repositories/     # UserRepository
+    services/         # Lógica de negocio (AuthServiceImpl)
+    utils/            # JwtUtil, filtros de seguridad
+  resources/
+    application.properties
+docker-compose.yml
+Dockerfile
 ```
 
 ---
@@ -110,9 +121,3 @@ src/
 **LucaLzt**  
 [LinkedIn](https://www.linkedin.com/in/luca-lazarte)  
 [GitHub](https://github.com/LucaLzt)
-
----
-
-## 🖤 ¿Te resultó útil?
-
-¡No dudes en dar una estrella ⭐ al repositorio, dejar tus sugerencias o abrir issues para mejorar el proyecto!
