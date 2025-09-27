@@ -30,7 +30,8 @@ services:
       SPRING_DATASOURCE_USERNAME: jwt_user
       SPRING_DATASOURCE_PASSWORD: jwt_password
       JWT_SECRET: clave_secreta_super_segura_1234567890123456
-      JWT_EXPIRATION: 86400000
+      ACCESS_EXPIRATION: 900000         # 15 min
+      REFRESH_EXPIRATION: 1209600000    # 14 días
 
 volumes:
   mysql-data:
