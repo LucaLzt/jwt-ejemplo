@@ -39,7 +39,7 @@ public class User implements UserDetails {
     @Column(name = "role", nullable = false)
     private UserRole role;
 
-    @Column(name = "refresh_token", unique = true)
+    @Column(name = "refresh_token", unique = true, length = 512)
     private String refreshToken;
 
     /**

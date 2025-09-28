@@ -12,6 +12,7 @@ import org.springframework.beans.factory.annotation.Value;
 
 import javax.crypto.SecretKey;
 import java.util.Date;
+import java.util.UUID;
 import java.util.function.Function;
 import java.util.HashMap;
 import java.util.Map;
@@ -67,6 +68,7 @@ public class JwtUtil {
         // Claims adicionales
         Map<String, Object> claims = generateClaims(user);
         claims.put("token_type", tokenType);
+        claims.put("jti", UUID.randomUUID().toString());
 
         // Clave de firma
         SecretKey key = getKey();
@@ -136,7 +138,7 @@ public class JwtUtil {
      * @param token El token JWT.
      * @return La fecha de expiración.
      */
-    private Date getExpirationFromToken(String token) {
+    public Date getExpirationFromToken(String token) {
         return getClaim(token, Claims::getExpiration);
     }
 
@@ -187,6 +189,16 @@ public class JwtUtil {
      */
     private Boolean isTokenExpired(String token) {
         return getExpirationFromToken(token).before(new Date());
+    }
+
+    /**
+     * Obtiene el "jti" (JWT ID) desde un token JWT.
+     *
+     * @param token El token JWT.
+     * @return El valor del claim "jti".
+     */
+    public String getJti(String token) {
+        return getClaim(token, c -> (String) c.get("jti"));
     }
 
 }

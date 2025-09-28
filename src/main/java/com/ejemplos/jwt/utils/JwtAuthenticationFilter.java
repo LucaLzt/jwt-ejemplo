@@ -1,5 +1,6 @@
 package com.ejemplos.jwt.utils;
 
+import com.ejemplos.jwt.repositories.RevokedTokenRepository;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.MalformedJwtException;
 import jakarta.servlet.FilterChain;
@@ -27,10 +28,23 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtUtil jwtUtil;
     private final UserDetailsService userDetailsService;
+    private final RevokedTokenRepository revokedTokenRepository;
+
+    /**
+     * Determina si el filtro debe aplicarse a la solicitud actual.
+     * Omite las rutas que comienzan con "/api/auth/".
+     *
+     * @param request
+     * @return true si la solicitud no debe ser filtrada, false en caso contrario.
+     */
+    @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) {
+        String uri = request.getRequestURI();
+        return uri.startsWith("/api/auth/");
+    }
 
     /**
      * Ejecuta el filtro en cada request entrante.
-     * - Omite las rutas que comienzan con "/api/auth" (login, register, refresh, logout).
      * - Extrae el bearer token del header Authorization.
      * - Valida el token como accessToken y, si es válido, setea la autenticación en el SecurityContext.
      *
@@ -43,22 +57,19 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
         try {
-            if (isAuthRequest(request)) {
-                filterChain.doFilter(request, response);
-                return;
-            }
 
             String token = getTokenFromRequest(request);
+            if (token != null) {
+                String username = jwtUtil.getUsernameFromToken(token);
+                String jti = jwtUtil.getJti(token);
 
-            if (token == null) {
-                filterChain.doFilter(request, response);
-                return;
-            }
+                if (revokedTokenRepository.existsByJti(jti)) {
+                    response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                    response.getWriter().write("Unauthorized: token revoked");
+                    return;
+                }
 
-            String username = jwtUtil.getUsernameFromToken(token);
-
-            if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-                UserDetails userDetails = getUserDetails(username);
+                UserDetails userDetails = userDetailsService.loadUserByUsername(username);
 
                 if (jwtUtil.isAccessTokenValid(token, userDetails)) {
                     setAuthentication(request, userDetails);
@@ -67,10 +78,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
             filterChain.doFilter(request, response);
         } catch (MalformedJwtException e) {
+            System.out.println("Malformed JWT: " + e.getMessage());
             handleErrorToken(response, "Malformed JWT: " + e.getMessage());
         } catch (JwtException e) {
+            System.out.println("JWT Exception: " + e.getMessage());
             handleErrorToken(response, "JWT Exception: " + e.getMessage());
         } catch (IOException e) {
+            System.out.println("Exception: " + e.getMessage());
             throw new RuntimeException(e);
         }
     }
@@ -106,26 +120,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         authenticationToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
 
         SecurityContextHolder.getContext().setAuthentication(authenticationToken);
-    }
-
-    /**
-     * Verifica si la solicitud es una solicitud de autenticación.
-     *
-     * @param request La solicitud HTTP entrante.
-     * @return true si la solicitud es para autenticación, false en caso contrario.
-     */
-    private boolean isAuthRequest(HttpServletRequest request) {
-        return request.getServletPath().contains("/api/auth");
-    }
-
-    /**
-     * Obtiene los detalles del usuario a partir del nombre de usuario.
-     *
-     * @param username El nombre de usuario del usuario.
-     * @return Los detalles del usuario.
-     */
-    private UserDetails getUserDetails(String username) {
-        return userDetailsService.loadUserByUsername(username);
     }
 
     /**

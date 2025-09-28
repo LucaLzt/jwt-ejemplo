@@ -3,7 +3,9 @@ package com.ejemplos.jwt.services.impl;
 import com.ejemplos.jwt.models.dtos.AuthDTO;
 import com.ejemplos.jwt.models.dtos.LoginDTO;
 import com.ejemplos.jwt.models.dtos.RegisterDTO;
+import com.ejemplos.jwt.models.entities.RevokedToken;
 import com.ejemplos.jwt.models.entities.User;
+import com.ejemplos.jwt.repositories.RevokedTokenRepository;
 import com.ejemplos.jwt.repositories.UserRepository;
 import com.ejemplos.jwt.services.AuthService;
 import com.ejemplos.jwt.utils.JwtUtil;
@@ -16,6 +18,8 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.time.Instant;
+
 /*
  * Implementación del servicio de autenticación.
  */
@@ -27,6 +31,7 @@ public class AuthServiceImpl implements AuthService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
+    private final RevokedTokenRepository revokedTokenRepository;
 
     /**
      * Realiza la autenticación de un usuario.
@@ -150,6 +155,28 @@ public class AuthServiceImpl implements AuthService {
         user.setRole(register.getRole());
 
         return user;
+    }
+
+    @Transactional
+    public void logoutByAccessToken(String bearerToken) {
+        String token = bearerToken != null && bearerToken.startsWith("Bearer ")
+                ? bearerToken.substring(7) : bearerToken;
+
+        String jti = jwtUtil.getJti(token);
+        String subject = jwtUtil.getUsernameFromToken(token);
+        Instant exp = jwtUtil.getExpirationFromToken(token).toInstant();
+
+        RevokedToken revoked = new RevokedToken();
+        revoked.setJti(jti);
+        revoked.setSubject(subject);
+        revoked.setReason("LOGOUT");
+        revoked.setExpiresAt(exp);
+        revokedTokenRepository.save(revoked);
+
+        userRepository.findByEmail(subject).ifPresent(user -> {
+            user.setRefreshToken(null);
+            userRepository.save(user);
+        });
     }
 
 }

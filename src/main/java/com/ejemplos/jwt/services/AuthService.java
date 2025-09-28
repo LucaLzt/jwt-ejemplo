@@ -13,5 +13,6 @@ public interface AuthService {
     AuthDTO register(RegisterDTO register) throws Exception;
     AuthDTO refresh(String providedRefreshToken);
     void logout(String userEmail);
+    void logoutByAccessToken(String bearerToken);
 
 }
