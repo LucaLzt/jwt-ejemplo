@@ -15,6 +15,7 @@ El objetivo es ser una guía clara y práctica de cómo manejar JWTs de manera *
 - Emisión de **access + refresh tokens**.
 - Endpoint `/api/auth/refresh` para renovar access tokens usando refresh.
 - Endpoint `/api/auth/logout` para invalidar refresh tokens en servidor.
+- Limpieza automática de tokens revocados mediante un job programado con @Scheduled.
 - Integración completa con **Spring Security**.
 - **MySQL** como base de datos relacional.
 - **Docker Compose** para levantar app + MySQL.
@@ -86,7 +87,15 @@ java -jar target/app.jar
 Authorization: Bearer <accessToken>
 ```
 3. **Token expirado** → El cliente usa el `refreshToken` en `/api/auth/refresh` para obtener un nuevo par de tokens.
-4. **Logout** → El servidor borra el refresh token de BD, invalidando la sesión.
+4. **Logout** → El servidor invalida el token guardado en la base de datos y agrega el access token a la blacklist, cerrando la sesión inmediatamente aunque el token no haya expirado.
+
+---
+
+## 🧹 Limpieza automática de tokens
+
+El sistema incluye un job programado (`TokenCleanupJob`) que se ejecuta diariamente y elimina
+de la base de datos todos los tokens revocados cuya fecha de expiración (`expires_at`) ya pasó.
+Esto evita que la tabla `revoked_tokens` crezca indefinidamente y mantiene la base optimizada.
 
 ---
 
@@ -100,6 +109,7 @@ src/
     repositories/     # UserRepository
     services/         # Lógica de negocio (AuthServiceImpl)
     utils/            # JwtUtil, filtros de seguridad
+    jobs/             # Limpieza de tokens revocados (TokenCleanupJob)
   resources/
     application.properties
 docker-compose.yml
