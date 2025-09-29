@@ -1,51 +1,100 @@
-# 🔐 Proyecto JWT con Spring Boot
+# Proyecto JWT con Spring Boot
 
-Este repositorio implementa un sistema de **autenticación y autorización** en APIs REST usando **JSON Web Tokens (JWT)** con **Spring Boot 3** y **Spring Security**, incorporando:
+Este repositorio implementa un sistema de **autenticación y autorización** en API REST usando **JSON Web Tokens (JWT)** con **Spring Boot 3** y **Spring Security**, incorporando:
   - **Access Tokens** de vida corta para autenticar peticiones.
   - **Refresh Tokens** de vida larga para renovar accesos sin re-login.
   - Persistencia del refresh token en la base de datos.
   - Endpoints de `login`, `register`, `refresh` y `logout`.
-El objetivo es ser una guía clara y práctica de cómo manejar JWTs de manera **segura y escalable** en aplicaciones Java modernas.
+  - Flujo de recuperación de contraseña con token temporal (15 min) enviado por mail. 
+
+El objetivo es ser una guía clara y práctica de cómo manejar JWT de manera **segura y escalable** en aplicaciones Java modernas.
 
 ---
 
-## 🚀 Características principales
+## Características principales
 
 - Registro y login de usuarios con contraseña encriptada.
 - Emisión de **access + refresh tokens**.
 - Endpoint `/api/auth/refresh` para renovar access tokens usando refresh.
-- Endpoint `/api/auth/logout` para invalidar refresh tokens en servidor.
-- Limpieza automática de tokens revocados mediante un job programado con @Scheduled.
+- Endpoint `/api/auth/logout` para invalidar tokens en servidor y cerrar sesión inmediatamente.
+- Flujo de **recuperación de contraseña**:
+  - `/api/auth/forgot-password` genera un token UUID válido por 15 minutos y lo envía por correo.
+  - `/api/auth/reset-password` permite actualizar la contraseña validando ducho token.
+- Servicio de emails desacoplado (`EmailService`) que encapsula `JavaMailSender`.
+- Limpieza automática de tokens (revocados y de recuperación) mediante un job programado con `@Scheduled`.
 - Integración completa con **Spring Security**.
 - **MySQL** como base de datos relacional.
-- **Docker Compose** para levantar app + MySQL.
+- **Docker Compose** para levantar app + MySQL + configuración con `.env`.
 - Código ampliamente comentado para aprendizaje.
 
 ---
 
-## 🛠️ Tecnologías utilizadas
+## Tecnologías utilizadas
 
 - **Java 21**
 - **Spring Boot 3**
 - **Spring Security**
 - **Spring Data JPA**
 - **JJWT** (`io.jsonwebtoken`)
+- **JavaMailSender** (Spring Mail)
 - **MySQL**
 - **Maven**
 - **Docker & Docker Compose**
 
 ---
 
-## 📦 Instalación y ejecución
+## Instalación y ejecución
 
-### **1. Clonar el repositorio**
+### 1. Clonar el repositorio
 
 ```bash
 git clone https://github.com/LucaLzt/jwt-ejemplo.git
 cd jwt-ejemplo
 ```
+### 2. Configuración de variables de entorno
 
-### **2. Levantar con Docker**
+El proyecto utiliza un archivo `.env` para credenciales y configuraciones sensibles.
+En el repositorio vas a encontrar un `.env.example`. Copialo y completalo con tus valores:
+
+```bash
+cp .env.example .env
+```
+
+Ejemplo de variables:
+
+```env
+# MySQL
+MYSQL_ROOT_PASSWORD=supersecret
+MYSQL_DATABASE=jwt_app
+MYSQL_USER=jwt_user
+MYSQL_PASSWORD=jwt_pass
+
+# JWT
+JWT_SECRET=clave_secreta_super_segura_1234567890123456
+ACCESS_EXPIRATION=900000         # 15 minutos
+REFRESH_EXPIRATION=1209600000    # 14 días
+
+# Mailtrap (SMTP para pruebas)
+MAIL_USER=tu_usuario_mailtrap
+MAIL_PASS=tu_password_mailtrap
+```
+
+### Configuración de correo con Mailtrap
+
+Este proyecto usa [Mailtrap](https://mailtrap.io/) para simular el envío de correos en desarrollo.
+Mailtrap provee un servidor SMTP de sandbox que captura los correos enviados y los muestra en su web, sin
+entragarlos a destinatarios reales.
+
+Para configurarlo:
+
+1. Crea una cuenta gratuita en [Mailtrap](https://mailtrap.io/).
+2. En el dashboard, abre una **Inbox de Sandbox** (Mailtrap crea una por defecto).
+3. Ve a la pestaña **SMTP Settings** y copia las credenciales.
+4. Pega esas credenciales en tu archivo `.env` en las variables `MAIL_USER` y `MAIL_PASS`.
+
+> Los correos enviados por la aplicación aparecerán en tu Inbox de Mailtrap y no se enviarán a destinatarios reales.
+
+### 3. Levantar con Docker
 
 Con el `docker-compose.yml` incluido:
 
@@ -53,23 +102,8 @@ Con el `docker-compose.yml` incluido:
 docker compose up --build
 ```
 Esto levanta:
-- `mysql` en el puerto `3307`
-- `spring-jwt-app` en el puerto `8080` 
-
-### **3. Variables de entorno**
-
-En `docker-compose.yml` ya están seteadas:
-```yaml
-JWT_SECRET: clave_secreta_super_segura_1234567890123456
-ACCESS_EXPIRATION: 900000        # 15 minutos
-REFRESH_EXPIRATION: 1209600000   # 14 días
-```
-Y el `application.properties` las usa así:
-```properties
-jwt.secret=${JWT_SECRET}
-jwt.accessExpiration=${ACCESS_EXPIRATION}
-jwt.refreshExpiration=${REFRESH_EXPIRATION}
-```
+- `mysql` en el puerto `3307` (con healthcheck para esperar a que esté listo).
+- `spring-jwt-app` en el puerto `8080`.
 
 ### **4. Compilar localmente (opcional)**
 
@@ -79,7 +113,7 @@ java -jar target/app.jar
 ```
 ---
 
-## 🔑 Flujo de autenticación
+## Flujo de autenticación
 
 1. **Login / Register** → Devuelve `accessToken` + `refreshToken` en un `AuthDTO`.
 2. **Acceso a endpoints protegidos** → Se envía el `accessToken` en el header:
@@ -91,42 +125,67 @@ Authorization: Bearer <accessToken>
 
 ---
 
-## 🧹 Limpieza automática de tokens
+## Flujo de recuperación de contraseña
 
-El sistema incluye un job programado (`TokenCleanupJob`) que se ejecuta diariamente y elimina
-de la base de datos todos los tokens revocados cuya fecha de expiración (`expires_at`) ya pasó.
-Esto evita que la tabla `revoked_tokens` crezca indefinidamente y mantiene la base optimizada.
+1. **Solicitud de recuperación**:
+   - Endpoint: `POST /api/auth/forgot-password`
+   - Body: `{ "email": "usuario@demo.com" }`
+   - Genera un token UUID con duración de 15 minutos y envía un link al correo configurado.
+   
+2. **Restablecimiento de contraseña**:
+   - Endpoint: `POST /api/auth/reset-password`
+   - Body: 
+   ```json
+    {
+      "token": "<uuid>",
+      "newPassword": "nueva_contraseña",
+      "repeatNewPassword": "nueva_contraseña"
+    }
+    ```
+   - Si el token es válido y no está expirado ni usado, actualiza la contraseña del usuario.
 
 ---
 
-## 📚 Estructura del proyecto
+## Limpieza automática de tokens
+
+El sistema incluye un job programado (`TokenCleanupJob`) que se ejecuta diariamente y elimina
+de la base de datos todos los tokens revocados y de recuperación de contraseña cuya fecha de expiración 
+(`expires_at`) ya pasó.
+Esto evita que las tablas crezcan indefinidamente y mantiene la base optimizada.
+
+---
+
+## Estructura del proyecto
 
 ```
 src/
   main/java/com/ejemplos/jwt/
-    controllers/      # Endpoints REST (AuthController, etc.)
-    models/           # Entidades JPA (User)
-    repositories/     # UserRepository
-    services/         # Lógica de negocio (AuthServiceImpl)
+    controllers/      # Endpoints REST (AuthController, PasswordRecoveryController, etc.)
+    models/           # Entidades JPA (User, RevokedToken, PasswordResetToken)
+    repositories/     # UserRepository, RevokedTokenRepository, PasswordResetTokenRepository
+    services/         # Lógica de negocio (AuthServiceImpl, PasswordRecoveryService, EmailService)
     utils/            # JwtUtil, filtros de seguridad
-    jobs/             # Limpieza de tokens revocados (TokenCleanupJob)
+    jobs/             # Limpieza de tokens (TokenCleanupJob)
   resources/
     application.properties
 docker-compose.yml
 Dockerfile
+.env.example
 ```
 
 ---
 
-## 💡 Recursos recomendados
+## Recursos recomendados
 
 - [Documentación oficial Spring Security](https://docs.spring.io/spring-security/reference/)
 - [Documentación JJWT](https://github.com/jwtk/jjwt)
 - [Artículo sobre JWT](https://jwt.io/introduction/)
+  [Spring Mail Reference](https://docs.spring.io/spring-framework/reference/integration/email.html)
+- [Mailtrap](https://mailtrap.io/) (SMTP para pruebas en desarrollo)
 
 ---
 
-## 📝 Autor
+## Autor
 
 **LucaLzt**  
 [LinkedIn](https://www.linkedin.com/in/luca-lazarte)  
