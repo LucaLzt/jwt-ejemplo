@@ -1,5 +1,6 @@
 package com.ejemplos.jwt.jobs;
 
+import com.ejemplos.jwt.repositories.PasswordResetTokenRepository;
 import com.ejemplos.jwt.repositories.RevokedTokenRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -13,16 +14,22 @@ import java.time.Instant;
 public class TokenCleanupJob {
 
     private final RevokedTokenRepository revokedTokenRepository;
+    private final PasswordResetTokenRepository passwordResetTokenRepository;
 
     /**
-     * Elimina de la BD todos los tokens revocados que ya vencieron (expires_at < now).
-     * Corre todos los días a las 03:00 AM.
+     * Limpia todos los tokens expirados de diferentes tipos
+     * Corre todos los días a las 03:00 AM
      */
     @Scheduled(cron = "0 0 3 * * *")
     @Transactional
     public void cleanupExpiredRevokedTokens() {
+        // Limpio los tokens revocados o expirados
         int removed = revokedTokenRepository.deleteAllExpired(Instant.now());
-        System.out.println("[TokenCleanupJob] Revoked tokens limpiados: " + removed);
+
+        // Limpio los tokens de reseteo de contraseña expirados
+        int removedPasswordReset = passwordResetTokenRepository.deleteAllUsedOrExpired(Instant.now());
+
+        System.out.println("[TokenCleanupJob] Revoked tokens limpiados: " + removed + ", Password reset tokens limpiados: " + removedPasswordReset);
     }
 
 }
