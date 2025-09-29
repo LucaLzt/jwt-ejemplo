@@ -180,7 +180,7 @@ Dockerfile
 - [Documentación oficial Spring Security](https://docs.spring.io/spring-security/reference/)
 - [Documentación JJWT](https://github.com/jwtk/jjwt)
 - [Artículo sobre JWT](https://jwt.io/introduction/)
-  [Spring Mail Reference](https://docs.spring.io/spring-framework/reference/integration/email.html)
+- [Spring Mail Reference](https://docs.spring.io/spring-framework/reference/integration/email.html)
 - [Mailtrap](https://mailtrap.io/) (SMTP para pruebas en desarrollo)
 
 ---
