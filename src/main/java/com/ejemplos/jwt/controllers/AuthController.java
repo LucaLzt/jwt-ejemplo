@@ -1,10 +1,9 @@
 package com.ejemplos.jwt.controllers;
 
-import com.ejemplos.jwt.models.dtos.AuthDTO;
-import com.ejemplos.jwt.models.dtos.LoginDTO;
-import com.ejemplos.jwt.models.dtos.RefreshDTO;
-import com.ejemplos.jwt.models.dtos.RegisterDTO;
+import com.ejemplos.jwt.models.dtos.*;
 import com.ejemplos.jwt.services.AuthService;
+import com.ejemplos.jwt.services.PasswordRecoveryService;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -17,12 +16,13 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 public class AuthController {
 
-    private final AuthService service;
+    private final AuthService authService;
+    private final PasswordRecoveryService passwordRecoveryService;
 
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody LoginDTO dto) {
         try {
-            AuthDTO tokens = service.login(dto);
+            AuthDTO tokens = authService.login(dto);
             return ResponseEntity.ok(tokens);
         } catch (BadCredentialsException | UsernameNotFoundException e) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
@@ -35,7 +35,7 @@ public class AuthController {
     @PostMapping("/register")
     public ResponseEntity<?> register(@RequestBody RegisterDTO dto) {
         try {
-            AuthDTO tokens = service.register(dto);
+            AuthDTO tokens = authService.register(dto);
             return ResponseEntity.ok(tokens);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
@@ -46,7 +46,7 @@ public class AuthController {
     @PostMapping("/refresh")
     public ResponseEntity<?> refresh(@RequestBody RefreshDTO dto) {
         try {
-            AuthDTO tokens = service.refresh(dto.getRefreshToken());
+            AuthDTO tokens = authService.refresh(dto.getRefreshToken());
             return ResponseEntity.ok(tokens);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
@@ -56,9 +56,34 @@ public class AuthController {
 
     @PostMapping("/logout")
     public ResponseEntity<Void> logout(@RequestHeader("Authorization") String bearer) {
-        System.out.println("Logout: " + bearer);
-        service.logoutByAccessToken(bearer);
+        authService.logoutByAccessToken(bearer);
         return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/forgot-password")
+    public ResponseEntity<?> forgotPassword(@RequestBody ForgotDTO dto, HttpServletRequest request) {
+        try {
+            String base = request.getScheme() + "://" + request.getServerName() + ":" + request.getServerPort();
+            passwordRecoveryService.requestRecovery(dto.getEmail(), base);
+            return ResponseEntity.ok("{\"message\": \"If the email exists, a recovery link has been sent.\"}");
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("{\"error\": \"Error processing password recovery request\"}");
+        }
+    }
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<?> resetPassword(@RequestBody ResetDTO dto) {
+        try {
+            passwordRecoveryService.confirmReset(dto.getToken(), dto.getNewPassword(), dto.getRepeatNewPassword());
+            return ResponseEntity.ok("{\"message\": \"Password has been reset successfully.\"}");
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body("{\"error\": \"" + e.getMessage() + "\"}");
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("{\"error\": \"Error resetting password\"}");
+        }
     }
 
 }
