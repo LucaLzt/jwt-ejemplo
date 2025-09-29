@@ -24,6 +24,7 @@ public class PasswordRecoveryServiceImpl implements PasswordRecoveryService {
     private final UserRepository userRepository;
     private final PasswordResetTokenRepository passwordResetTokenRepository;
     private final PasswordEncoder passwordEncoder;
+    private final EmailServiceImpl emailService;
 
     // TTL del token de recuperación (15 minutos)
     private static final Duration TTL = Duration.ofMinutes(15);
@@ -55,8 +56,8 @@ public class PasswordRecoveryServiceImpl implements PasswordRecoveryService {
         // Armo el link
         String link = appBaseUrl + "/api/auth/reset-password?token=" + rawToken;
 
-        // Envío el email (Implementar JavaMailSender)
-        System.out.println("Password reset link: " + link);
+        // Envío el email
+        emailService.sendPasswordReset(email, link);
     }
 
    /**
