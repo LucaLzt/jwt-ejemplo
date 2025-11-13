@@ -2,6 +2,7 @@ package com.ejemplos.jwt.services.impl;
 
 import com.ejemplos.jwt.models.entities.PasswordResetToken;
 import com.ejemplos.jwt.models.entities.User;
+import com.ejemplos.jwt.publishers.EmailProducer;
 import com.ejemplos.jwt.repositories.PasswordResetTokenRepository;
 import com.ejemplos.jwt.repositories.UserRepository;
 import com.ejemplos.jwt.services.PasswordRecoveryService;
@@ -24,7 +25,7 @@ public class PasswordRecoveryServiceImpl implements PasswordRecoveryService {
     private final UserRepository userRepository;
     private final PasswordResetTokenRepository passwordResetTokenRepository;
     private final PasswordEncoder passwordEncoder;
-    private final EmailServiceImpl emailService;
+    private final EmailProducer emailProducer;
 
     // TTL del token de recuperación (15 minutos)
     private static final Duration TTL = Duration.ofMinutes(15);
@@ -57,7 +58,7 @@ public class PasswordRecoveryServiceImpl implements PasswordRecoveryService {
         String link = appBaseUrl + "/api/auth/reset-password?token=" + rawToken;
 
         // Envío el email
-        emailService.sendPasswordReset(email, link);
+        emailProducer.sendEmailPasswordReset(email, link);
     }
 
    /**

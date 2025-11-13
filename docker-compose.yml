@@ -19,11 +19,33 @@ services:
       retries: 5
       start_period: 30s
 
+  rabbitmq:
+    image: rabbitmq:3.13-management
+    container_name: rabbitmq-jwt
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-guest}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASS:-guest}
+    ports:
+        - "5672:5672"       # RabbitMQ main port
+        - "15672:15672"     # RabbitMQ management UI port
+    healthcheck:
+        test: [ "CMD", "rabbitmq-diagnostics", "status" ]
+        interval: 10s
+        timeout: 5s
+        retries: 10
+    volumes:
+        - rabbitmq_data:/var/lib/rabbitmq
+        - rabbitmq_logs:/var/log/rabbitmq
+    restart: unless-stopped
+
+
   app:
     build: .
-    container_name: spring-jwt-app
+    container_name: spring-jwt
     depends_on:
       mysql:
+        condition: service_healthy
+      rabbitmq:
         condition: service_healthy
     environment:
       # Database
@@ -36,6 +58,22 @@ services:
       ACCESS_EXPIRATION: ${ACCESS_EXPIRATION}
       REFRESH_EXPIRATION: ${REFRESH_EXPIRATION}
 
+      # RabbitMQ
+      SPRING_RABBITMQ_HOST: rabbitmq
+      SPRING_RABBITMQ_PORT: 5672
+      SPRING_RABBITMQ_USERNAME: ${RABBITMQ_USER:-guest}
+      SPRING_RABBITMQ_PASSWORD: ${RABBITMQ_PASS:-guest}
+
+      # Customize environment variables as needed
+      RABBITMQ_EMAIL_RECOVERY_PASSWORD_QUEUE: ${RABBITMQ_EMAIL_RECOVERY_PASSWORD_QUEUE}
+      RABBITMQ_EMAIL_RECOVERY_PASSWORD_EXCHANGE: ${RABBITMQ_EMAIL_RECOVERY_PASSWORD_EXCHANGE}
+      RABBITMQ_EMAIL_RECOVERY_PASSWORD_ROUTING_KEY: ${RABBITMQ_EMAIL_RECOVERY_PASSWORD_ROUTING_KEY}
+
+      # DLX / DLQ
+      RABBITMQ_APP_DLX: ${RABBITMQ_APP_DLX}
+      RABBITMQ_EMAIL_RECOVERY_PASSWORD_DLQ: ${RABBITMQ_EMAIL_RECOVERY_PASSWORD_DLQ}
+      RABBITMQ_EMAIL_RECOVERY_PASSWORD_DLQ_ROUTING_KEY: ${RABBITMQ_EMAIL_RECOVERY_PASSWORD_DLQ_ROUTING_KEY}
+
       # Mailtrap SMTP
       SPRING_MAIL_HOST: sandbox.smtp.mailtrap.io
       SPRING_MAIL_PORT: 587
@@ -45,6 +83,9 @@ services:
       SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_ENABLE: true
     ports:
       - "8080:8080"
+    restart: unless-stopped
 
 volumes:
   mysql-data:
+  rabbitmq_data:
+  rabbitmq_logs:
