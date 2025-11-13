@@ -5,7 +5,9 @@ Este repositorio implementa un sistema de **autenticación y autorización** en 
   - **Refresh Tokens** de vida larga para renovar accesos sin re-login.
   - Persistencia del refresh token en la base de datos.
   - Endpoints de `login`, `register`, `refresh` y `logout`.
-  - Flujo de recuperación de contraseña con token temporal (15 min) enviado por mail. 
+  - Flujo de recuperación de contraseña con token temporal (15 min) enviado por mail.
+  - Envío de emails asincrónico usando RabbitMQ (decoupling + resiliencia).
+  - DLX + DLQ + reintentos automáticos para garantizar entrega.
 
 El objetivo es ser una guía clara y práctica de cómo manejar JWT de manera **segura y escalable** en aplicaciones Java modernas.
 
@@ -20,11 +22,15 @@ El objetivo es ser una guía clara y práctica de cómo manejar JWT de manera **
 - Flujo de **recuperación de contraseña**:
   - `/api/auth/forgot-password` genera un token UUID válido por 15 minutos y lo envía por correo.
   - `/api/auth/reset-password` permite actualizar la contraseña validando ducho token.
+- **RabbitMQ como broker de mensajes**:
+  - Email encolado → consumer independiente envía el correo.
+  - Reintentos automáticos con backoff exponencial.
+  - Dead Letter Queue (DLQ) para mensajes fallidos permanentemente.
 - Servicio de emails desacoplado (`EmailService`) que encapsula `JavaMailSender`.
 - Limpieza automática de tokens (revocados y de recuperación) mediante un job programado con `@Scheduled`.
 - Integración completa con **Spring Security**.
 - **MySQL** como base de datos relacional.
-- **Docker Compose** para levantar app + MySQL + configuración con `.env`.
+- **Docker Compose** para levantar app + MySQL + RabbitMQ + configuración con `.env`.
 - Código ampliamente comentado para aprendizaje.
 
 ---
@@ -34,12 +40,14 @@ El objetivo es ser una guía clara y práctica de cómo manejar JWT de manera **
 - **Java 21**
 - **Spring Boot 3**
 - **Spring Security**
+- **Spring AMQL (RabbitMQ)**
 - **Spring Data JPA**
 - **JJWT** (`io.jsonwebtoken`)
 - **JavaMailSender** (Spring Mail)
 - **MySQL**
 - **Maven**
 - **Docker & Docker Compose**
+- **RabbitMQ Management Plugin**
 
 ---
 
@@ -64,19 +72,35 @@ Ejemplo de variables:
 
 ```env
 # MySQL
-MYSQL_ROOT_PASSWORD=supersecret
+MYSQL_ROOT_PASSWORD=example_root_password
 MYSQL_DATABASE=jwt_app
 MYSQL_USER=jwt_user
-MYSQL_PASSWORD=jwt_pass
+MYSQL_PASSWORD=example_password
 
 # JWT
-JWT_SECRET=clave_secreta_super_segura_1234567890123456
-ACCESS_EXPIRATION=900000         # 15 minutos
-REFRESH_EXPIRATION=1209600000    # 14 días
+JWT_SECRET=your_jwt_secret_goes_here_32_chars_minimum
+ACCESS_EXPIRATION=900000
+REFRESH_EXPIRATION=1209600000
 
-# Mailtrap (SMTP para pruebas)
-MAIL_USER=tu_usuario_mailtrap
-MAIL_PASS=tu_password_mailtrap
+# Mailtrap
+MAIL_USER=your_mailtrap_user
+MAIL_PASS=your_mailtrap_password
+
+# RabbitMQ connection (infra)
+RABBITMQ_HOST=rabbitmq
+RABBITMQ_PORT=5672
+RABBITMQ_USERNAME=guest
+RABBITMQ_PASSWORD=guest
+
+# Email Reset Password Queue (producer + consumer)
+RABBITMQ_EMAIL_RECOVERY_PASSWORD_QUEUE=email.reset-password.q
+RABBITMQ_EMAIL_RECOVERY_PASSWORD_EXCHANGE=email.ex
+RABBITMQ_EMAIL_RECOVERY_PASSWORD_ROUTING_KEY=email.reset-password
+
+# DLX / DLQ
+RABBITMQ_APP_DLX=app.dlx
+RABBITMQ_EMAIL_RECOVERY_PASSWORD_DLQ=email.reset-password.dlq
+RABBITMQ_EMAIL_RECOVERY_PASSWORD_DLQ_ROUTING_KEY=email.reset-password.dlq
 ```
 
 ### Configuración de correo con Mailtrap
@@ -160,6 +184,9 @@ Esto evita que las tablas crezcan indefinidamente y mantiene la base optimizada.
 ```
 src/
   main/java/com/ejemplos/jwt/
+    configuration/
+    publishers/
+    consumers/
     controllers/      # Endpoints REST (AuthController, PasswordRecoveryController, etc.)
     models/           # Entidades JPA (User, RevokedToken, PasswordResetToken)
     repositories/     # UserRepository, RevokedTokenRepository, PasswordResetTokenRepository
@@ -182,11 +209,8 @@ Dockerfile
 - [Artículo sobre JWT](https://jwt.io/introduction/)
 - [Spring Mail Reference](https://docs.spring.io/spring-framework/reference/integration/email.html)
 - [Mailtrap](https://mailtrap.io/) (SMTP para pruebas en desarrollo)
+- [RabbitMQ Tutoriales Oficiales](https://www.rabbitmq.com/tutorials)
+- [Spring AMQP Reference](https://docs.spring.io/spring-amqp/reference/)
+- [Dead Letter Exchanges](https://www.rabbitmq.com/docs/dlx)
 
 ---
-
-## Autor
-
-**LucaLzt**  
-[LinkedIn](https://www.linkedin.com/in/luca-lazarte)  
-[GitHub](https://github.com/LucaLzt)
