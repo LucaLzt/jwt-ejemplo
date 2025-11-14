@@ -102,10 +102,10 @@ Completar con tus valores:
 
 ```env
 # MySQL
-MYSQL_ROOT_PASSWORD=supersecret
+MYSQL_ROOT_PASSWORD=example_root_password
 MYSQL_DATABASE=jwt_app
 MYSQL_USER=jwt_user
-MYSQL_PASSWORD=jwt_pass
+MYSQL_PASSWORD=example_password
 
 # JWT
 JWT_SECRET=clave_super_segura_32_chars_minimo
@@ -241,9 +241,3 @@ Dockerfile                          # Imagen Docker multi-stage.
 - [RabbitMQ Docs](https://www.rabbitmq.com/documentation.html)
 
 ---
-
-## Autor
-
-**LucaLzt**  
-[LinkedIn](https://www.linkedin.com/in/luca-lazarte)  
-[GitHub](https://github.com/LucaLzt)
