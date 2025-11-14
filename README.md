@@ -157,20 +157,48 @@ Esto evita que las tablas crezcan indefinidamente y mantiene la base optimizada.
 
 ## Estructura del proyecto
 
+El proyecto está organizado siguiendo una arquitectura híbrida Vertical Slicing + Hexagonal Architecture donde:
+
+- Cada feature (caso de uso principal) tiene sus propias capas internas (``web``, ``application``, ``domain``).
+- La infraestructura técnica (mensajería, mail, scheduler, etc.) vive fuera de los features.
+- La seguridad y otros aspectos transversales se encuentran en ``shared/``
+
+Esto permite un código modular, escalable y fácilmente testable, manteniendo aisladas las reglas de negocio de la infraestructura.
+
 ```
 src/
   main/java/com/ejemplos/jwt/
-    controllers/      # Endpoints REST (AuthController, PasswordRecoveryController, etc.)
-    models/           # Entidades JPA (User, RevokedToken, PasswordResetToken)
-    repositories/     # UserRepository, RevokedTokenRepository, PasswordResetTokenRepository
-    services/         # Lógica de negocio (AuthServiceImpl, PasswordRecoveryService, EmailService)
-    utils/            # JwtUtil, filtros de seguridad
-    jobs/             # Limpieza de tokens (TokenCleanupJob)
+    shared/                         # Componentes transversales a toda la app.
+        config/                     # Beans globales (ApplicationConfig)
+        security/                   # Seguridad, JWT, filtros, utilidades.
+    infra/                          # Infraestructura técnica (ajena al dominio).
+        mail/                       # Implementación genérica de envío de emails.
+        messaging/                  # Integración con RabbitMQ.
+            email/                  # Productores, consumidores y topologías.
+    features/                       # Slices verticales (cada uno con su mini-arquitectura).
+        auth/
+            web/                    # Controladores HTTP de autenticación.
+            application/            # Casos de uso (login, register, refresh, logout).
+                dto/                # Objetos de transferencia específicos del feature.
+                service/            # Servicios de aplicación.
+            domain/                 # Modelo de dominio de Auth.
+                entity/             # User, RevokedToken.
+                enums/              # UserRole.
+                repository/         # Repositorios JPA de Auth.
+        recoverypassword/
+            web/                    # Controlador de recuperación de contraseña.
+            application/            # Caso de uso (forgot-password, reset-password).
+                dto/                # ForgotDTO, ResetDTO, RecoveryEmailDTO.
+                service/            # Lógica del proceso de recuperación.
+            domain/              
+                entity/             # PasswordResetToken.
+                repository/         # PasswordResetTokenRepository.
+    JwtApplication.java             # Punto de entrada a Spring Boot.
   resources/
     application.properties
-docker-compose.yml
-Dockerfile
-.env.example
+docker-compose.yml                  # MySQL + RabbitMQ + App Spring Boot.
+Dockerfile                          # Imagen Docker multi-stage.
+.env.example                        # Variables de entorno del proyecto.
 ```
 
 ---
