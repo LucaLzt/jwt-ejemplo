@@ -49,7 +49,7 @@ public class EmailConsumer {
      *   - Si agota los reintentos → se rechaza → va a DLX → llega a la DLQ.
      */
     @RabbitListener(
-            queues =  {"${rabbitmq.email.recovery-password.queue}"},
+            queues =  {"${rabbitmq.email.reset.queue}"},
             concurrency = "4"
     )
     public void consumeEmailPasswordReset(RecoveryEmailDTO emailDTO) {

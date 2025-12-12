@@ -1,0 +1,59 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: jwt
+
+  datasource:
+    url: ${SPRING_DATASOURCE_URL}
+    username: ${SPRING_DATASOURCE_USERNAME}
+    password: ${SPRING_DATASOURCE_PASSWORD}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      connection-timeout: 60000
+      initialization-fail-timeout: 60000
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    database-platform: org.hibernate.dialect.MySQLDialect
+    show-sql: false
+
+  rabbitmq:
+    host: ${SPRING_RABBITMQ_HOST}
+    port: ${SPRING_RABBITMQ_PORT}
+    username: ${SPRING_RABBITMQ_USERNAME}
+    password: ${SPRING_RABBITMQ_PASSWORD}
+
+  mail:
+    host: sandbox.smtp.mailtrap.io
+    port: 587
+    username: ${SPRING_EMAIL_USERNAME}
+    password: ${SPRING_EMAIL_PASSWORD}
+    test-connection: false
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+          connectiontimeout: 5000
+          timeout: 5000
+          writetimeout: 5000
+
+  jwt:
+    secret: ${JWT_SECRET}
+    accessExpiration: ${ACCESS_EXPIRATION}
+    refreshExpiration: ${REFRESH_EXPIRATION}
+
+  rabbitmq:
+    dlx:
+      name: ${RABBITMQ_APP_DLX}
+    email:
+      reset:
+        queue: ${RABBITMQ_EMAIL_RECOVERY_PASSWORD_QUEUE}
+        exchange: ${RABBITMQ_EMAIL_RECOVERY_PASSWORD_EXCHANGE}
+        routing-key: ${RABBITMQ_EMAIL_RECOVERY_PASSWORD_ROUTING_KEY}
+        dlq: ${RABBITMQ_EMAIL_RECOVERY_PASSWORD_DLQ}
+        dlq-routing-key: ${RABBITMQ_EMAIL_RECOVERY_PASSWORD_DLQ_ROUTING_KEY}

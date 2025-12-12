@@ -4,7 +4,6 @@ services:
     container_name: mysql-jwt
     restart: always
     environment:
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
       MYSQL_DATABASE: ${MYSQL_DATABASE}
       MYSQL_USER: ${MYSQL_USER}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD}
@@ -75,12 +74,8 @@ services:
       RABBITMQ_EMAIL_RECOVERY_PASSWORD_DLQ_ROUTING_KEY: ${RABBITMQ_EMAIL_RECOVERY_PASSWORD_DLQ_ROUTING_KEY}
 
       # Mailtrap SMTP
-      SPRING_MAIL_HOST: sandbox.smtp.mailtrap.io
-      SPRING_MAIL_PORT: 587
-      SPRING_MAIL_USERNAME: ${MAIL_USER}
-      SPRING_MAIL_PASSWORD: ${MAIL_PASS}
-      SPRING_MAIL_PROPERTIES_MAIL_SMTP_AUTH: true
-      SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_ENABLE: true
+      SPRING_EMAIL_USERNAME: ${MAIL_USER}
+      SPRING_EMAIL_PASSWORD: ${MAIL_PASS}
     ports:
       - "8080:8080"
     restart: unless-stopped

@@ -29,10 +29,10 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class EmailProducer {
 
-    @Value("${rabbitmq.email.recovery.password.exchange}")
+    @Value("${rabbitmq.email.reset.exchange}")
     private String emailRecoveryPasswordExchange;
 
-    @Value("${rabbitmq.email.recovery.password.routing.key}")
+    @Value("${rabbitmq.email.reset.routing-key}")
     private String emailRecoveryPasswordRoutingKey;
 
     private static final Logger LOGGER = LoggerFactory.getLogger(EmailProducer.class);

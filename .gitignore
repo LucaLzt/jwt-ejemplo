@@ -36,6 +36,9 @@ build/
 .env*
 !.env.example
 
+# Profiles
+application-*.yml
+
 # Logs
 logs/
 *.log
