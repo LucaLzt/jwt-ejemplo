@@ -42,18 +42,18 @@ spring:
           timeout: 5000
           writetimeout: 5000
 
-  jwt:
-    secret: ${JWT_SECRET}
-    accessExpiration: ${ACCESS_EXPIRATION}
-    refreshExpiration: ${REFRESH_EXPIRATION}
+jwt:
+  secret: ${JWT_SECRET}
+  accessExpiration: ${ACCESS_EXPIRATION}
+  refreshExpiration: ${REFRESH_EXPIRATION}
 
-  rabbitmq:
-    dlx:
-      name: ${RABBITMQ_APP_DLX}
-    email:
-      reset:
-        queue: ${RABBITMQ_EMAIL_RECOVERY_PASSWORD_QUEUE}
-        exchange: ${RABBITMQ_EMAIL_RECOVERY_PASSWORD_EXCHANGE}
-        routing-key: ${RABBITMQ_EMAIL_RECOVERY_PASSWORD_ROUTING_KEY}
-        dlq: ${RABBITMQ_EMAIL_RECOVERY_PASSWORD_DLQ}
-        dlq-routing-key: ${RABBITMQ_EMAIL_RECOVERY_PASSWORD_DLQ_ROUTING_KEY}
+rabbitmq:
+  dlx:
+    name: ${RABBITMQ_APP_DLX}
+  email:
+    reset:
+      queue: ${RABBITMQ_EMAIL_RECOVERY_PASSWORD_QUEUE}
+      exchange: ${RABBITMQ_EMAIL_RECOVERY_PASSWORD_EXCHANGE}
+      routing-key: ${RABBITMQ_EMAIL_RECOVERY_PASSWORD_ROUTING_KEY}
+      dlq: ${RABBITMQ_EMAIL_RECOVERY_PASSWORD_DLQ}
+      dlq-routing-key: ${RABBITMQ_EMAIL_RECOVERY_PASSWORD_DLQ_ROUTING_KEY}
