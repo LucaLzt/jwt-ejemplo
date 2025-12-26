@@ -39,6 +39,7 @@ public class SecurityConfig {
                 .requestMatchers("/api/auth/**").permitAll()
                 .requestMatchers("/api/recovery/**").permitAll()
                 .requestMatchers("/api/public/**").permitAll()
+                .requestMatchers("/error").permitAll()
 
                 .anyRequest().authenticated()
             )

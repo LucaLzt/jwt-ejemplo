@@ -54,8 +54,11 @@ public class AuthController {
 
     @PostMapping("/refresh")
     public ResponseEntity<RefreshResponse> refresh(@Valid @RequestBody RefreshRequest request) {
-        String newAccessToken = refreshTokenUseCase.refresh(request.refreshToken());
-        return ResponseEntity.ok(new RefreshResponse(newAccessToken));
+        RefreshTokenResult refreshTokenResult = refreshTokenUseCase.refresh(request.refreshToken());
+        return ResponseEntity.ok(new RefreshResponse(
+                refreshTokenResult.accessToken(),
+                refreshTokenResult.refreshToken())
+        );
     }
 
     @PostMapping("/logout")

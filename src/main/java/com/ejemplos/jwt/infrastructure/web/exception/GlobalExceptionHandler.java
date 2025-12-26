@@ -4,6 +4,7 @@ import com.ejemplos.jwt.domain.exception.generic.BadRequestException;
 import com.ejemplos.jwt.domain.exception.generic.ConflictException;
 import com.ejemplos.jwt.domain.exception.generic.ResourceNotFound;
 import com.ejemplos.jwt.domain.exception.generic.UnauthorizedException;
+import com.ejemplos.jwt.domain.exception.personalized.SecurityBreachException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -46,6 +47,13 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     public ProblemDetail handleDomainException(BadCredentialsException e) {
         ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.UNAUTHORIZED, "Invalid email or password");
         problem.setTitle("Unauthorized");
+        return problem;
+    }
+
+    @ExceptionHandler(SecurityBreachException.class)
+    public ProblemDetail handleSecurityBreach(SecurityBreachException e) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.FORBIDDEN, e.getMessage());
+        problem.setTitle("Security Breach Detected");
         return problem;
     }
 }
