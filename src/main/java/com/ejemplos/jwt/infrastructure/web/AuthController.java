@@ -2,6 +2,7 @@ package com.ejemplos.jwt.infrastructure.web;
 
 import com.ejemplos.jwt.application.ports.in.*;
 import com.ejemplos.jwt.application.ports.out.JwtTokenProviderPort;
+import com.ejemplos.jwt.domain.exception.personalized.InvalidTokenException;
 import com.ejemplos.jwt.infrastructure.web.dto.*;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -28,19 +29,15 @@ public class AuthController {
 
     @PostMapping("/login")
     public ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest request) {
-        try {
-            LoginCommand command = new LoginCommand(
-                    request.email(),
-                    request.password()
-            );
-            LoginResult result = loginUseCase.login(command);
-            return ResponseEntity.ok(new LoginResponse(
-                    result.accessToken(),
-                    result.refreshToken()
-            ));
-        } catch (BadCredentialsException | UsernameNotFoundException e) {
-            throw new BadCredentialsException("Invalid credentials");
-        }
+        LoginCommand command = new LoginCommand(
+                request.email(),
+                request.password()
+        );
+        LoginResult result = loginUseCase.login(command);
+        return ResponseEntity.ok(new LoginResponse(
+                result.accessToken(),
+                result.refreshToken()
+        ));
     }
 
     @PostMapping("/register")
@@ -57,45 +54,38 @@ public class AuthController {
 
     @PostMapping("/refresh")
     public ResponseEntity<RefreshResponse> refresh(@Valid @RequestBody RefreshRequest request) {
-        try {
-            String newAccessToken = refreshTokenUseCase.refresh(request.refreshToken());
-            return ResponseEntity.ok(new RefreshResponse(newAccessToken));
-        } catch (Exception e) {
-            throw new IllegalArgumentException("The refresh token is invalid or expired");
-        }
+        String newAccessToken = refreshTokenUseCase.refresh(request.refreshToken());
+        return ResponseEntity.ok(new RefreshResponse(newAccessToken));
     }
 
     @PostMapping("/logout")
     public ResponseEntity<Void> logout(@RequestHeader("Authorization") String authHeader) {
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            throw new InvalidTokenException("Invalid Authorization header");
+        }
+
         String token = authHeader.substring(7);
 
         String jti = jwtTokenProviderPort.getJtiFromToken(token);
         Instant expiration = jwtTokenProviderPort.getExpirationFromToken(token);
         String email = jwtTokenProviderPort.getUsernameFromToken(token);
 
-        LogoutCommand command = new LogoutCommand(
-                jti,
-                email,
-                expiration
-        );
-
-        logoutUseCase.logout(command);
-        return ResponseEntity.ok().build();
+        logoutUseCase.logout(new LogoutCommand(jti, email, expiration));
+        return ResponseEntity.noContent().build();
     }
 
     @PostMapping("/recovery")
-    public ResponseEntity<Void> requestRecovery(@RequestBody RequestRecoveryRequest request) {
+    public ResponseEntity<Void> requestRecovery(@Valid @RequestBody RequestRecoveryRequest request) {
         requestRecoveryUseCase.requestRecovery(request.email());
         return ResponseEntity.ok().build();
     }
 
     @PostMapping("/reset-password")
-    public ResponseEntity<Void> resetPassword(@RequestBody ResetPasswordRequest request) {
-        ResetPasswordCommand command = new ResetPasswordCommand(
+    public ResponseEntity<Void> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
+        resetPasswordUseCase.resetPassword(new ResetPasswordCommand(
                 request.token(),
                 request.newPassword()
-        );
-        resetPasswordUseCase.resetPassword(command);
+        ));
         return ResponseEntity.ok().build();
     }
 }

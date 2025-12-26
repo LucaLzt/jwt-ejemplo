@@ -6,6 +6,8 @@ import com.ejemplos.jwt.application.ports.in.LoginUseCase;
 import com.ejemplos.jwt.application.ports.out.GeneratedToken;
 import com.ejemplos.jwt.application.ports.out.JwtTokenProviderPort;
 import com.ejemplos.jwt.application.ports.out.PasswordEncoderPort;
+import com.ejemplos.jwt.domain.exception.personalized.InvalidCredentialsException;
+import com.ejemplos.jwt.domain.exception.personalized.UserNotFoundException;
 import com.ejemplos.jwt.domain.model.RefreshToken;
 import com.ejemplos.jwt.domain.model.User;
 import com.ejemplos.jwt.domain.repository.RefreshTokenRepository;
@@ -28,7 +30,7 @@ public class LoginService implements LoginUseCase {
     public LoginResult login(LoginCommand command) {
 
         User user = userRepository.findByEmail(command.email())
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new UserNotFoundException("User not found with email: " + command.email()));
 
         boolean matches = passwordEncoderPort.matches(
                 command.password(),
@@ -36,7 +38,7 @@ public class LoginService implements LoginUseCase {
         );
 
         if (!matches) {
-            throw new IllegalArgumentException("Invalid credentials");
+            throw new InvalidCredentialsException();
         }
 
         String accessToken = jwtTokenProviderPort.generateAccessToken(user);

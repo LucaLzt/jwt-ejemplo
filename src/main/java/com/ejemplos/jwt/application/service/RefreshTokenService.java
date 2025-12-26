@@ -2,6 +2,8 @@ package com.ejemplos.jwt.application.service;
 
 import com.ejemplos.jwt.application.ports.in.RefreshTokenUseCase;
 import com.ejemplos.jwt.application.ports.out.JwtTokenProviderPort;
+import com.ejemplos.jwt.domain.exception.personalized.InvalidTokenException;
+import com.ejemplos.jwt.domain.exception.personalized.UserNotFoundException;
 import com.ejemplos.jwt.domain.model.RefreshToken;
 import com.ejemplos.jwt.domain.model.User;
 import com.ejemplos.jwt.domain.repository.RefreshTokenRepository;
@@ -22,14 +24,14 @@ public class RefreshTokenService implements RefreshTokenUseCase {
     @Override
     public String refresh(String refreshTokenValue) {
         RefreshToken refreshToken = refreshTokenRepository.findByToken(refreshTokenValue)
-                .orElseThrow(() -> new RuntimeException("Invalid refresh token"));
+                .orElseThrow(() -> new InvalidTokenException("Invalid refresh token"));
 
         if (refreshToken.isRevoked() || refreshToken.getExpiresAt().isBefore(Instant.now())) {
-            throw new IllegalArgumentException("Invalid refresh token");
+            throw new InvalidTokenException("The refresh token is expired or revoked");
         }
 
         User user = userRepository.findById(refreshToken.getUserId())
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new UserNotFoundException("User not found for the provided token"));
 
         return jwtTokenProviderPort.generateAccessToken(user);
     }

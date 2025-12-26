@@ -2,6 +2,7 @@ package com.ejemplos.jwt.application.service;
 
 import com.ejemplos.jwt.application.ports.in.RequestRecoveryUseCase;
 import com.ejemplos.jwt.application.ports.out.EmailNotificationPort;
+import com.ejemplos.jwt.domain.exception.personalized.UserNotFoundException;
 import com.ejemplos.jwt.domain.model.RecoveryToken;
 import com.ejemplos.jwt.domain.repository.RecoveryTokenRepository;
 import com.ejemplos.jwt.domain.repository.UserRepository;
@@ -22,15 +23,14 @@ public class RequestRecoveryService implements RequestRecoveryUseCase {
     public void requestRecovery(String email) {
         var userOpt = userRepository.findByEmail(email);
         if (userOpt.isEmpty()) {
-            System.out.print("ERROR -> NO SE ENCONTRÓ EL USUARIO");
-            return;
+            throw new UserNotFoundException("User not found with email: " + email);
         }
 
         String tokenString = UUID.randomUUID().toString();
         RecoveryToken recoveryToken = RecoveryToken.create(
                 email,
                 tokenString,
-                15*60
+                15 * 60
         );
 
         recoveryTokenRepository.save(recoveryToken);
