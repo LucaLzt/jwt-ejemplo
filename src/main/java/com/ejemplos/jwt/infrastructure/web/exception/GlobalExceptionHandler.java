@@ -5,14 +5,18 @@ import com.ejemplos.jwt.domain.exception.generic.ConflictException;
 import com.ejemplos.jwt.domain.exception.generic.ResourceNotFound;
 import com.ejemplos.jwt.domain.exception.generic.UnauthorizedException;
 import com.ejemplos.jwt.domain.exception.personalized.SecurityBreachException;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ProblemDetail;
+import org.springframework.http.*;
 import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.validation.FieldError;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
 import java.net.URI;
+import java.util.HashMap;
+import java.util.Map;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
@@ -65,5 +69,21 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         problem.setTitle("Security Breach Detected");
         problem.setType(URI.create(ERROR_URI_BASE + "security-breach"));
         return problem;
+    }
+
+    @Override
+    protected ResponseEntity<Object> handleMethodArgumentNotValid(MethodArgumentNotValidException ex, HttpHeaders headers,
+            HttpStatusCode status, WebRequest request) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, "Validation Failed");
+        problem.setTitle("Validation Error");
+        problem.setType(URI.create(ERROR_URI_BASE + "validation-error"));
+
+        Map<String, String> errors = new HashMap<>();
+        for (FieldError error : ex.getBindingResult().getFieldErrors()) {
+            errors.put(error.getField(), error.getDefaultMessage());
+        }
+
+        problem.setProperty("errors", errors);
+        return ResponseEntity.status(status).body(problem);
     }
 }
