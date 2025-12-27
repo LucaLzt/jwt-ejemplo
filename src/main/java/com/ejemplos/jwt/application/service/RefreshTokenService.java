@@ -28,6 +28,11 @@ public class RefreshTokenService implements RefreshTokenUseCase {
     @Override
     @Transactional(noRollbackFor = SecurityBreachException.class)
     public RefreshTokenResult refresh(String refreshTokenValue) {
+
+        if (!jwtTokenProviderPort.isRefreshTokenValid(refreshTokenValue)) {
+            throw new InvalidTokenException("Invalid refresh token format or signature");
+        }
+
         RefreshToken refreshToken = refreshTokenRepository.findByToken(refreshTokenValue)
                 .orElseThrow(() -> new InvalidTokenException("Invalid refresh token"));
 
