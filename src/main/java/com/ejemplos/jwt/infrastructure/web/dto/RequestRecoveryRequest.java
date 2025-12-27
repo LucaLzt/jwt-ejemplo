@@ -1,11 +1,11 @@
 package com.ejemplos.jwt.infrastructure.web.dto;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Size;
 
 public record RequestRecoveryRequest(
-        @NotBlank(message = "The password is required")
-        @Size(min = 6, message = "The password must be at least 6 characters long")
+        @Schema(description = "El email de la cuenta a recuperar", example = "usuario@demo.com")
+        @NotBlank(message = "The email is required")
         String email
 ) {
 }
