@@ -54,12 +54,15 @@ public class AuthController {
 
     @PostMapping("/refresh")
     public ResponseEntity<RefreshResponse> refresh(@Valid @RequestBody RefreshRequest request) {
-        String newAccessToken = refreshTokenUseCase.refresh(request.refreshToken());
-        return ResponseEntity.ok(new RefreshResponse(newAccessToken));
+        RefreshTokenResult refreshTokenResult = refreshTokenUseCase.refresh(request.refreshToken());
+        return ResponseEntity.ok(new RefreshResponse(
+                refreshTokenResult.accessToken(),
+                refreshTokenResult.refreshToken())
+        );
     }
 
     @PostMapping("/logout")
-    public ResponseEntity<Void> logout(@RequestHeader("Authorization") String authHeader) {
+    public ResponseEntity<Void> logout(@RequestHeader("Authorization") String authHeader, @Valid @RequestBody LogoutRequest request) {
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
             throw new InvalidTokenException("Invalid Authorization header");
         }
@@ -70,7 +73,14 @@ public class AuthController {
         Instant expiration = jwtTokenProviderPort.getExpirationFromToken(token);
         String email = jwtTokenProviderPort.getUsernameFromToken(token);
 
-        logoutUseCase.logout(new LogoutCommand(jti, email, expiration));
+        LogoutCommand command = new LogoutCommand(
+                jti,
+                email,
+                expiration,
+                request.refreshToken()
+        );
+
+        logoutUseCase.logout(command);
         return ResponseEntity.noContent().build();
     }
 

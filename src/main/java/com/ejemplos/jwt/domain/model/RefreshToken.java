@@ -1,9 +1,10 @@
 package com.ejemplos.jwt.domain.model;
 
+import com.ejemplos.jwt.domain.exception.personalized.InvalidTokenException;
 import lombok.Builder;
 import lombok.Getter;
+import lombok.Setter;
 
-import java.time.Duration;
 import java.time.Instant;
 
 @Getter
@@ -15,9 +16,11 @@ public class RefreshToken {
     private final String token;
     private final Instant createdAt;
     private final Instant expiresAt;
-    private final boolean revoked;
+    private boolean revoked;
+    @Setter
+    private String replacedBy;
 
-    private RefreshToken(Long id, Long userId, String token, Instant createdAt, Instant expiresAt, boolean revoked) {
+    private RefreshToken(Long id, Long userId, String token, Instant createdAt, Instant expiresAt, boolean revoked, String replacedBy) {
         if (userId == null) {
             throw new IllegalArgumentException("UserId cannot be null.");
         }
@@ -30,6 +33,7 @@ public class RefreshToken {
         this.createdAt = createdAt;
         this.expiresAt = expiresAt;
         this.revoked = revoked;
+        this.replacedBy = replacedBy;
     }
 
     public static RefreshToken create(Long userId, String token, Instant expiresAt) {
@@ -39,7 +43,32 @@ public class RefreshToken {
                 token,
                 Instant.now(),
                 expiresAt,
-                false
+                false,
+                null
         );
+    }
+
+    public void rotate(String newRefreshToken) {
+        if (this.revoked) {
+            throw new InvalidTokenException("Attempted to rotate an already revoked token.");
+        }
+        this.revoked = true;
+        this.replacedBy = newRefreshToken;
+    }
+
+    public void revoke() {
+        this.revoked = true;
+    }
+
+    public boolean isValid() {
+        return !this.revoked && !isExpired();
+    }
+
+    public boolean isExpired() {
+        return Instant.now().isAfter(this.expiresAt);
+    }
+
+    public boolean isCompromised() {
+        return this.revoked;
     }
 }

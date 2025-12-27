@@ -29,6 +29,9 @@ public class RefreshTokenEntity {
     @Column(nullable = false)
     private boolean revoked;
 
+    @Column(name = "replaced_by")
+    private String replacedBy;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
     private UserEntity user;

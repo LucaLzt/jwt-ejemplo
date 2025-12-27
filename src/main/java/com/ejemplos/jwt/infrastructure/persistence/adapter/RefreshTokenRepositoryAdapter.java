@@ -29,4 +29,9 @@ public class RefreshTokenRepositoryAdapter implements RefreshTokenRepository {
         return springDataRefreshTokenRepository.findByToken(token)
                 .map(refreshTokenMapper::toDomain);
     }
+
+    @Override
+    public void revokeAllTokens(Long userId) {
+        springDataRefreshTokenRepository.revokeAllByUserId(userId);
+    }
 }
