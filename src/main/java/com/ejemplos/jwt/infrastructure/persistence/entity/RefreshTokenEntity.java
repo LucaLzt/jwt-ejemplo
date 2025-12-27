@@ -17,7 +17,7 @@ public class RefreshTokenEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, unique = true)
+    @Column(nullable = false, unique = true,  length = 512)
     private String token;
 
     @Column(name = "created_at", nullable = false)
@@ -29,7 +29,7 @@ public class RefreshTokenEntity {
     @Column(nullable = false)
     private boolean revoked;
 
-    @Column(name = "replaced_by")
+    @Column(name = "replaced_by", length = 512)
     private String replacedBy;
 
     @ManyToOne(fetch = FetchType.LAZY)

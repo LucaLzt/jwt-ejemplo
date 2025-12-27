@@ -2,6 +2,7 @@ package com.ejemplos.jwt.application.service;
 
 import com.ejemplos.jwt.application.ports.in.LogoutCommand;
 import com.ejemplos.jwt.application.ports.in.LogoutUseCase;
+import com.ejemplos.jwt.domain.exception.personalized.InvalidTokenException;
 import com.ejemplos.jwt.domain.model.RefreshToken;
 import com.ejemplos.jwt.domain.model.RevokedToken;
 import com.ejemplos.jwt.domain.repository.RefreshTokenRepository;
@@ -30,12 +31,10 @@ public class LogoutService implements LogoutUseCase {
         );
         revokedTokenRepository.save(revokedToken);
 
-        Optional<RefreshToken> storedToken = refreshTokenRepository.findByToken(command.refreshToken());
+        RefreshToken storedToken = refreshTokenRepository.findByToken(command.refreshToken())
+                .orElseThrow(() -> new InvalidTokenException("Refresh token is invalid or does not exist"));
 
-        if (storedToken.isPresent()) {
-            RefreshToken refreshToken = storedToken.get();
-            refreshToken.revoke();
-            refreshTokenRepository.save(refreshToken);
-        }
+        storedToken.revoke();
+        refreshTokenRepository.save(storedToken);
     }
 }
