@@ -15,6 +15,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.Instant;
@@ -104,16 +106,15 @@ public class AuthController {
                     @ApiResponse(responseCode = "401", description = "Token no proporcionado o inválido", content = @Content(schema = @Schema(implementation = ProblemDetail.class)))
             }
     )
-    public ResponseEntity<Void> logout(@RequestHeader("Authorization") String authHeader, @Valid @RequestBody LogoutRequest request) {
-        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            throw new InvalidTokenException("Invalid Authorization header");
-        }
+    public ResponseEntity<Void> logout(@Valid @RequestBody LogoutRequest request) {
 
-        String token = authHeader.substring(7);
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
-        String jti = jwtTokenProviderPort.getJtiFromToken(token);
-        Instant expiration = jwtTokenProviderPort.getExpirationFromToken(token);
-        String email = jwtTokenProviderPort.getUsernameFromToken(token);
+        String accessToken = (String) authentication.getCredentials();
+
+        String jti = jwtTokenProviderPort.getJtiFromToken(accessToken);
+        Instant expiration = jwtTokenProviderPort.getExpirationFromToken(accessToken);
+        String email = authentication.getName();
 
         LogoutCommand command = new LogoutCommand(
                 jti,
