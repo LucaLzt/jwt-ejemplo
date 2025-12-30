@@ -1,5 +1,5 @@
 server:
-  port: 8080
+  port: ${SERVER_PORT:8080}
 
 spring:
   application:
@@ -13,10 +13,11 @@ spring:
     hikari:
       connection-timeout: 60000
       initialization-fail-timeout: 60000
+      maximum-pool-size: ${DB_POOL_SIZE:10}
 
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: ${JPA_DDL_AUTO:update}
     database-platform: org.hibernate.dialect.MySQLDialect
     show-sql: false
 
@@ -27,10 +28,10 @@ spring:
     password: ${SPRING_RABBITMQ_PASSWORD}
 
   mail:
-    host: sandbox.smtp.mailtrap.io
-    port: 587
-    username: ${SPRING_EMAIL_USERNAME}
-    password: ${SPRING_EMAIL_PASSWORD}
+    host: ${SPRING_MAIL_HOST:sandbox.smtp.mailtrap.io}
+    port: ${SPRING_MAIL_PORT:587}
+    username: ${SPRING_MAIL_USERNAME}
+    password: ${SPRING_MAIL_PASSWORD}
     test-connection: false
     properties:
       mail:
@@ -43,9 +44,9 @@ spring:
           writetimeout: 5000
 
 jwt:
-  secret: ${JWT_SECRET}
-  accessExpiration: ${ACCESS_EXPIRATION}
-  refreshExpiration: ${REFRESH_EXPIRATION}
+  secret-key: ${JWT_SECRET}
+  access-token-expiration-seconds: ${ACCESS_EXPIRATION:900}
+  refresh--token-expiration-seconds: ${REFRESH_EXPIRATION:1209600}
 
 rabbitmq:
   dlx:

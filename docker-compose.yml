@@ -4,6 +4,7 @@ services:
     container_name: mysql-jwt
     restart: always
     environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
       MYSQL_DATABASE: ${MYSQL_DATABASE}
       MYSQL_USER: ${MYSQL_USER}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD}
@@ -52,6 +53,10 @@ services:
       SPRING_DATASOURCE_USERNAME: ${MYSQL_USER}
       SPRING_DATASOURCE_PASSWORD: ${MYSQL_PASSWORD}
 
+      # JPA
+      JPA_DDL_AUTO: update
+      DB_POOL_SIZE: 10
+
       # JWT
       JWT_SECRET: ${JWT_SECRET}
       ACCESS_EXPIRATION: ${ACCESS_EXPIRATION}
@@ -74,8 +79,10 @@ services:
       RABBITMQ_EMAIL_RECOVERY_PASSWORD_DLQ_ROUTING_KEY: ${RABBITMQ_EMAIL_RECOVERY_PASSWORD_DLQ_ROUTING_KEY}
 
       # Mailtrap SMTP
-      SPRING_EMAIL_USERNAME: ${MAIL_USER}
-      SPRING_EMAIL_PASSWORD: ${MAIL_PASS}
+      SPRING_MAIL_HOST: smtp.sendgrid.net
+      SPRING_MAIL_PORT: 587
+      SPRING_MAIL_USERNAME: ${MAIL_USER}
+      SPRING_MAIL_PASSWORD: ${MAIL_PASS}
     ports:
       - "8080:8080"
     restart: unless-stopped
