@@ -1,243 +1,211 @@
-# Proyecto JWT con Spring Boot - Autenticación, Refresh Tokens, Password Recovery y RabbitMQ
+## Sistema de Autenticación JWT con Arquitectura Hexagonal
+Este proyecto implementa un sistema robusto de autenticación y autorización utilizando **Spring Boot 3** y **Java 21**.
+El diseño sigue los principios de **Arquitectura Hexagonal (Puertos y Adaptadores)**, garantizando un bajo acoplamiento 
+y alta mantenibilidad.
 
-Este repositorio implementa un sistema completo de autenticación y autorización basada en JWT, diseñado
-con una arquitectura Vertical Slicing + Hexagonal Architecture (Ports & Adapters pragmático), integrando:
+El sistema incluye gestión completa de sesiones mediante **JWT (Access y Refresh Tokens)** con rotación automática,
+revocación de tokens (Blacklist), y un flujo asíncrono de recuperación de contraseñas utilizando **RabbitMQ**.
 
-### Autenticación
-- Access tokens de vida corta.
-- Refresh tokens persistidos en base de datos.
-- Logout seguro (blacklist + revocación).
-- Spring Security 6 + filtros personalizados.
+### Características Principales
+**Seguridad y Autenticación**
+- **Gestión de JWT**: Implementación dual de tokens (Access Token de vida corta y Refresh Token de vida larga).
+- **Rotación de Refresh Tokens**: Detección de robo de tokens. Si se intenta reutilizar un Refresh Token antiguo,
+se invalida toda la cadena de sesiones del usuario.
+- **Logout Seguro**: Mecanismo de lista negra (Blacklist) para invalidad Access Tokens antes de su expiración natural.
+- **Seguridad RBAC**: Control de acceso basado en roles (`ADMIN`, `CLIENT`).
 
-### Recuperación de contraseña
-- Token temporal de recuperación (15 minutos).
-- Email asincrónico enviado mediante RabbitMQ.
-- Procesamiento desacoplado vía `EmailProducer` y `EmailConsumer`.
+**Recuperación de Contraseñas**
+- **Flujo Asíncrono**: Desacoplamiento del envío de correos utilizando RabbitMQ.
+- **Infraestructura Resiliente**: Configuración de Dead Letter Queue (DLQ) para manejar fallos en el envío de correos.
+- **Seguridad**: Al restablecer la contraseña, se revocan automáticamente todas las sesiones activas del usuario.
 
-### Arquitectura
-- Vertical Slicing por feature: `auth`, `recoverypassword`.
-- Hexagonal Architecture pragmática: separación clara de _web / application / domain / infra / shared_.
-- Envío de correo desacoplado (`EmailService`), implementado en infraestructura.
-- Adaptadores para email y mensajería RabbitMQ.
-
-### Deploy con Docker Compose
-- App Spring Boot
-- MySQL 8.3
-- RabbitMQ + Management UI
-- Variables desde `.env`.
+**Arquitectura y Calidad**
+- **Arquitectura Hexagonal**: Separación estricta entre Dominio, Aplicación e Infraestructura.
+- **Documentación API**: Integración con Swagger UI / OpenAPI 3.
+- **Manejo de Errores Globales**: Respuestas estandarizadas utilizando `ProblemDetail` (RFC 7807).
 
 ---
 
-## Características principales
-
-### Autenticación y registro
-- `/api/auth/register`
-- `/api/auth/login`
-- `/api/auth/refresh`
-- `/api/auth/logout`
-
-### Seguridad
-- Implementación de `JwtAuthenticationFilter` propia.
-- Token revocado guardado en base + limpieza periódica.
-- Password encriptado con BCrypt.
-- Refresh Token persistido en `User`.
-
-### Refresh Token seguro
-- `refreshToken` guardado en DB.
-- Cada refresh genera un nuevo par (access + refresh).
-- El refresh token previo queda invalidado.
-
-### Recuperación de contraseña
-- `POST /api/recovery/forgot-password`
-  - Genera token UUID, persistido por 15 minutos.
-  - Publica mensaje a RabbitMQ -> `EmailProducer`.
-- `EmailConsumer` recibe el mensaje y usa `EmailService` para enviar email real.
-- `POST /api/recovery/reset-password`
-  - Valida token + exp. + coincidencia de passwords -> actualiza contraseña.
-
-### Email desacoplado
-- `EmailService` (interface en `shared.email`)
-- `EmailServiceImpl` (infraestructura usando JavaMailSender)
-- Config Mailtrap (SMTP Sandbox)
-
-### Limpieza automática de tokens
-- `TokenCleanupJob` programado con `@Scheduled`.
-- Borra tokens expirados (revoked + recovery).
+###  Stack Tecnológico
+- **Lenguaje**: Java 21
+- **Framework**: Spring Boot 3.3+
+- **Seguridad**: Spring Security 6, JJWT (0.12.x)
+- **Base de Datos**: MySQL 8
+- **Persistencia**: Spring Data JPA
+- **Mensajería**: RabbitMQ
+- **Mapeo**: MapStruct
+- **Documentación API**: OpenAPI 3
+- **Herramientas**: Lombok, Docker, Docker Compose
 
 ---
 
-## Tecnologías utilizadas
-- Java 21
-- Spring Boot 3.3+
-- Spring Security 6
-- Spring Data JPA
-- JJWT (io.jsonwebtoken)
-- JavaMailSender
-- RabbitMQ + Management UI
-- MySQL 8.3
-- Maven
-- Docker & Docker Compose
-- Lombok
+### Diagrama de Arquitectura
+1. **Flujo de Autenticación y Rotación de Tokens**: Este sistema representa cómo el sistema maneja el inicio de sesión
+y la renovación segura de tokens.
 
----
+```mermaid
+sequenceDiagram
+    actor User
+    participant API as Auth Controller
+    participant Service as Token Service
+    participant DB as Database
+    
+        User->>API: POST /login (Credenciales)
+        API->>Service: Validar Credenciales
+        Service->>DB: Generar & Guardar RefreshToken
+        Service-->>API: Retornar AccessToken + RefreshToken
+        API-->>User: Respuesta 200 OK
+    
+        Note over User, DB: El AccessToken expira
+    
+        User->>API: POST /refresh (RefreshToken Antiguo)
+        API->>Service: Validar RefreshToken
+        alt Token es Válido y No Revocado
+            Service->>DB: Revocar Token Antiguo
+            Service->>DB: Generar Nuevo RefreshToken (Rotación)
+            Service-->>API: Nuevo AccessToken + Nuevo RefreshToken
+            API-->>User: Respuesta 200 OK
+        else Token Reutilizado (Robo detectado)
+            Service->>DB: Revocar TODAS las sesiones del usuario
+            Service-->>API: Error SecurityBreachException
+            API-->>User: 403 Forbidden
+        end
+```
 
-## Instalación y ejecución
+2. **Flujo de Recuperación de Contraseña (Asíncrono)**: Muestra cómo se utiliza RabbitMQ para desacoplar el servicio de recuperación del envío de correos.
 
-### 1. Clonar el repositorio
+```mermaid
+sequenceDiagram
+    actor User
+    participant API as Recovery Controller
+    participant Domain as Recovery Service
+    participant DB as Database
+    participant Rabbit as RabbitMQ Exchange
+    participant Worker as Email Listener
+    participant SMTP as Mailtrap
 
-```bash
-git clone https://github.com/LucaLzt/jwt-ejemplo.git
-cd jwt-ejemplo
+    User->>API: POST /recovery (Email)
+    API->>Domain: Generar Token Recuperación
+    Domain->>DB: Guardar Token (TTL 15 min)
+    Domain->>Rabbit: Publicar Evento (EmailRequest)
+    Rabbit-->>Domain: ACK
+    API-->>User: 200 OK (Inmediato)
+    
+    par Procesamiento Asíncrono
+        Rabbit->>Worker: Consumir Mensaje
+        Worker->>SMTP: Enviar Email con Link
+        SMTP-->>User: Recibir Correo
+    end
+
+    User->>API: POST /reset-password (Token + Nueva Pass)
+    API->>Domain: Validar Token & Cambiar Pass
+    Domain->>DB: Actualizar Password
+    Domain->>DB: Revocar Refresh Tokens (Cerrar Sesiones)
+    Domain->>DB: Marcar Token Recuperación como Usado
+    API-->>User: 200 OK
 ```
 
 ---
 
-### 2. Configurar variables de entorno
+### Instalación y Ejecución
 
-```bash
-co .env.example .env
+**Requisitos Previos**
+- Docker y Docker Compose instalados.
+- Java 21 (Opcional si se usa Docker).
+
+**Configurar variables de entorno**
+
+Copiar el archivo de ejemplo:
 ```
-
-Completar con tus valores:
-
-```env
+cp .env.example .env
+```
+Completar con tus valores (ejemplo de configuración):
+```
 # MySQL
-MYSQL_ROOT_PASSWORD=example_root_password
+# ¡IMPORTANTE! MYSQL_USER debe ser un usuario distinto a 'root'.
+# La imagen de Docker ya crea al usuario root internamente usando MYSQL_ROOT_PASSWORD.
+MYSQL_ROOT_PASSWORD=tu_password_root_secreto
 MYSQL_DATABASE=jwt_app
-MYSQL_USER=jwt_user
-MYSQL_PASSWORD=example_password
+MYSQL_USER=jwt_user        # <--- No usar 'root' aquí
+MYSQL_PASSWORD=password_usuario
 
 # JWT
 JWT_SECRET=clave_super_segura_32_chars_minimo
-ACCESS_EXPIRATION=900000     # 15 minutos
-REFRESH_EXPIRATION=1209600000 # 14 días
+ACCESS_EXPIRATION=900        # 15 minutos (en segundos)
+REFRESH_EXPIRATION=1209600   # 14 días (en segundos)
 
 # Mailtrap SMTP
-MAIL_USER=xxxx
-MAIL_PASS=xxxx
+MAIL_USER=tu_usuario_mailtrap
+MAIL_PASS=tu_password_mailtrap
 
-# RabbitMQ (para recuperación de contraseña)
+# RabbitMQ
 RABBITMQ_USER=guest
 RABBITMQ_PASS=guest
-RABBITMQ_EMAIL_RECOVERY_PASSWORD_QUEUE=email.recovery.queue
-RABBITMQ_EMAIL_RECOVERY_PASSWORD_EXCHANGE=email.recovery.exchange
-RABBITMQ_EMAIL_RECOVERY_PASSWORD_ROUTING_KEY=email.recovery.routing
-RABBITMQ_EMAIL_RECOVERY_PASSWORD_DLQ=email.recovery.dlq
-RABBITMQ_EMAIL_RECOVERY_PASSWORD_DLX=email.recovery.dlx
+# ... (configuración de colas estándar) ...
+
+# ============================
+# Configuración Avanzada (Opcional)
+# ============================
+# Puerto de la aplicación
+SERVER_PORT=8080
+
+# Comportamiento de Base de Datos
+# 'update': Para desarrollo (crea/actualiza tablas automáticamente)
+# 'validate': Para producción (solo verifica que el esquema sea correcto)
+JPA_DDL_AUTO=update
+
+# Rendimiento
+DB_POOL_SIZE=10
 ```
+**Ejecutar con Docker Compose**
 
----
-
-### 3. Ejecutar con Docker Compose
-
-```bash
+Para levantar la aplicación junto con MySQL y RabbitMQ:
+```
 docker-compose up --build
 ```
+Servicios disponibles tras el despliegue:
+- **API REST**: `http://localhost:8080`
+- **Swagger UI**: `http://localhost:8080/swagger-ui/index.html`
+- **RabbitMQ Management**: `http://localhost:15672` (User: guest / Pass: guest)
 
-Esto levanta:
-- MySQL -> puerto 3307
-- RabbitMQ -> puertos 5672 / 15672
-- Spring Boot -> puerto 8080
+---
 
-UI de RabbitMQ:
-```txt
-http://localhost:15672
+### Estructura del Proyecto
+El proyecto sigue una estructura de paquetes orientada al dominio y a la arquitectura hexagonal:
+```
+src/main/java/com/ejemplos/jwt
+├── application
+│   ├── ports           # Interfaces (Puertos de Entrada/Salida)
+│   └── service         # Implementación de Casos de Uso (Lógica de Negocio)
+├── domain
+│   ├── model           # Entidades de Dominio Puras
+│   ├── exception       # Excepciones de Dominio
+│   └── repository      # Interfaces de Repositorio (Puertos)
+├── infrastructure
+│   ├── web             # Adaptadores Web (Controllers, DTOs, Handlers)
+│   ├── persistence     # Adaptadores de Base de Datos (JPA Entities, Repositorios)
+│   ├── security        # Configuración de Spring Security y Filtros JWT
+│   ├── messaging       # Adaptadores de RabbitMQ (Publisher/Listener)
+│   └── documentation   # Configuración de OpenAPI
+└── JwtApplication.java
 ```
 
 ---
 
-## Flujo de autenticación
+### Endpoints Principales
+La documentación completa y ejecutable está disponible en Swagger UI
 
-1. Usuario hace login -> se devuelven `accessToken` + `refreshToken`.
-2. Cada request a endpoints protegidos requiere:
-```makefile
-Authorization: Bearer <accessToken>
-```
-3. Si expira -> `POST /api/auth/refresh`.
-4. Logout -> invalida refresh + agrega access a blacklist.
+**Auth**
+- `POST /api/auth/register` - Registro de nuevos usuarios.
+- `POST /api/auth/login` - Inicio de sesión (Retorna Access + Refresh Token).
+- `POST /api/auth/refresh` - Solicitar nuevo Access Token.
+- `POST /api/auth/logout` - Cerrar sesión (Requiere Auth Header).
 
----
+**Recovery**
+- `POST /api/auth/recovery` - Solicitar email de recuperación.
+- `POST /api/auth/reset-password` - Establecer nueva contraseña.
 
-## Flujo de recuperación de contraseña
-
-1. Usuario solicita recuperación
-```bash
-POST /api/recovery/forgot-password
-
-{
-  "email": "usuario@demo.com"
-}
-```
-
-El servicio:
-* Genera token UUID (15 minutos).
-* Lo persiste.
-* Llama a `EmailProducer`.
-* Producer publica mensaje -> RabbitMQ.
-
-2. RabbitMQ -> Envío del correo
-`EmailConsumer`:
-    - Recibe el DTO.
-    - Llama a `EmailService.sendPasswordReset(...)`.
-    - Email llega a Mailtrap.
-
-3. Usuario cambia contraseña
-```bash
-POST /api/recovery/reset-password
-```
-Valida token -> actualiza contraseña -> borra token usado.
-
----
-
-## Arquitectura del proyecto
-
-### Vertical Slicing + Hexagonal Architecture (pragmática)
-
-El código está organizado por features y en capas internas inspiradas en Hexagonal Architecture:
-
-```
-src/
-  main/java/com/ejemplos/jwt/
-    shared/                         # Componentes transversales a toda la app.
-        config/                     # Beans globales (ApplicationConfig)
-        security/                   # Seguridad, JWT, filtros, utilidades.
-    infra/                          # Infraestructura técnica (ajena al dominio).
-        mail/                       # Implementación genérica de envío de emails.
-        messaging/                  # Integración con RabbitMQ.
-            email/                  # Productores, consumidores y topologías.
-    features/                       # Slices verticales (cada uno con su mini-arquitectura).
-        auth/
-            web/                    # Controladores HTTP de autenticación.
-            application/            # Casos de uso (login, register, refresh, logout).
-                dto/                # Objetos de transferencia específicos del feature.
-                service/            # Servicios de aplicación.
-            domain/                 # Modelo de dominio de Auth.
-                entity/             # User, RevokedToken.
-                enums/              # UserRole.
-                repository/         # Repositorios JPA de Auth.
-        recoverypassword/
-            web/                    # Controlador de recuperación de contraseña.
-            application/            # Caso de uso (forgot-password, reset-password).
-                dto/                # ForgotDTO, ResetDTO, RecoveryEmailDTO.
-                service/            # Lógica del proceso de recuperación.
-            domain/              
-                entity/             # PasswordResetToken.
-                repository/         # PasswordResetTokenRepository.
-    JwtApplication.java             # Punto de entrada a Spring Boot.
-  resources/
-    application.properties
-docker-compose.yml                  # MySQL + RabbitMQ + App Spring Boot.
-Dockerfile                          # Imagen Docker multi-stage.
-.env.example                        # Variables de entorno del proyecto.
-```
-
----
-
-## Recursos recomendados
-
-- [Documentación Spring Security](https://docs.spring.io/spring-security/reference/)
-- [Mailtrap](https://mailtrap.io/)
-- [JWT Introduction](https://jwt.io/introduction/)
-- [RabbitMQ Docs](https://www.rabbitmq.com/documentation.html)
-
----
+**Users (Protected)**
+- `POST /api/users/admin` - Solo rol ADMIN.
+- `POST /api/users/client` - Solo rol CLIENT.
+- `POST /api/users/common` - Tanto ADMIN como CLIENT.
