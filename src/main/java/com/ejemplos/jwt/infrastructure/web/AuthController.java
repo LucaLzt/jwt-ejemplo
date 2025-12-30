@@ -2,7 +2,6 @@ package com.ejemplos.jwt.infrastructure.web;
 
 import com.ejemplos.jwt.application.ports.in.*;
 import com.ejemplos.jwt.application.ports.out.JwtTokenProviderPort;
-import com.ejemplos.jwt.domain.exception.personalized.InvalidTokenException;
 import com.ejemplos.jwt.infrastructure.web.dto.*;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -132,7 +131,7 @@ public class AuthController {
             summary = "Solicitar recuperación de contraseña",
             description = "Envía un correo con un token de recuperación si el email existe.",
             responses = {
-                    @ApiResponse(responseCode = "200", description =  "Solicitud procesada (siempre devuelve 200 por seguridad para no revelar usuarios)"),
+                    @ApiResponse(responseCode = "200", description = "Solicitud procesada (siempre devuelve 200 por seguridad para no revelar usuarios)"),
                     @ApiResponse(responseCode = "400", description = "Email con formato inválido", content = @Content(schema = @Schema(implementation = ProblemDetail.class)))
             }
     )
