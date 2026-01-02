@@ -62,4 +62,12 @@ public class User {
         );
     }
 
+    public void toggleRole() {
+        if (this.role == UserRole.ADMIN) {
+            this.role = UserRole.CLIENT;
+        } else {
+            this.role = UserRole.ADMIN;
+        }
+        this.updatedAt = Instant.now();
+    }
 }
