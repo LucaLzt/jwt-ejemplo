@@ -1,0 +1,58 @@
+spring:
+  application:
+    name: jwt-test
+
+  # Usamos H2 (Base de datos en memoria) en lugar de MySQL
+  datasource:
+    url: jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE;MODE=MySQL
+    username: sa
+    password:
+    driver-class-name: org.h2.Driver
+
+  jpa:
+    # Importante: create-drop crea las tablas al inicio del test y las borra al final
+    hibernate:
+      ddl-auto: create-drop
+    database-platform: org.hibernate.dialect.H2Dialect
+    show-sql: true # Útil para ver qué hacen los tests
+    properties:
+      hibernate:
+        format_sql: true
+
+  # Configuramos RabbitMQ falso para que no intente conectarse
+  rabbitmq:
+    host: localhost
+    port: 5672
+    username: guest
+    password: guest
+
+  # Configuramos Email falso
+  mail:
+    host: localhost
+    port: 2525
+    username: test
+    password: test
+    properties:
+      mail:
+        smtp:
+          auth: false
+          starttls:
+            enable: false
+
+# Definimos valores dummy para JWT para que no fallen las @Value
+jwt:
+  secret-key: 404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970
+  access-token-expiration-seconds: 200
+  refresh--token-expiration-seconds: 1000
+
+# Definimos nombres de colas para que no fallen los @Value
+rabbitmq:
+  dlx:
+    name: app.dlx
+  email:
+    reset:
+      queue: test.email.queue
+      exchange: test.email.exchange
+      routing-key: test.email.routing
+      dlq: test.email.dlq
+      dlq-routing-key: test.email.dlq.routing

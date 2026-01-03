@@ -27,7 +27,7 @@ public class RegisterService implements RegisterUseCase {
 
         String encodedPassword = passwordEncoder.encode(command.password());
 
-        User user = User.createClient(
+        User user = User.create(
                 command.firstName(),
                 command.lastName(),
                 command.email(),

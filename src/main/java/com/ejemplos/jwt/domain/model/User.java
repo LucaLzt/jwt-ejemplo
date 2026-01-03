@@ -34,21 +34,7 @@ public class User {
         this.updatedAt = updatedAt;
     }
 
-    public static User createAdmin(String firstName, String lastName, String email, String password) {
-        return new User(
-                null,
-                firstName,
-                lastName,
-                email,
-                password,
-                UserRole.ADMIN,
-                true,
-                Instant.now(),
-                Instant.now()
-        );
-    }
-
-    public static User createClient(String firstName, String lastName, String email, String password) {
+    public static User create(String firstName, String lastName, String email, String password) {
         return new User(
                 null,
                 firstName,
