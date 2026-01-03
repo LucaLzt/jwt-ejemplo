@@ -167,9 +167,13 @@ public class AuthController {
             @ApiResponse(responseCode = "404", description = "Usuario no encontrado en la base de datos (Token desincronizado).", content = @Content(schema = @Schema(implementation = ProblemDetail.class)))
         }
     )
-    public ResponseEntity<Void> switchMyRole(Authentication authentication) {
-        String email = authentication.getName();
-        changeRoleUseCase.changeRole(email);
+    public ResponseEntity<Void> switchMyRole(Authentication authentication, @RequestHeader("Authorization") String authHeader) {
+        changeRoleUseCase.changeRole(
+                new ChangeRoleCommand(
+                    authentication.getName(),
+                    authHeader.replace("Bearer ", "")
+                )
+        );
         return ResponseEntity.ok().build();
     }
 }
