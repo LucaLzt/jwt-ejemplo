@@ -33,6 +33,7 @@ public class AuthController {
     private final LogoutUseCase logoutUseCase;
     private final RequestRecoveryUseCase requestRecoveryUseCase;
     private final ResetPasswordUseCase resetPasswordUseCase;
+    private final ChangeRoleUseCase changeRoleUseCase;
 
     @PostMapping("/login")
     @Operation(
@@ -154,6 +155,25 @@ public class AuthController {
                 request.token(),
                 request.newPassword()
         ));
+        return ResponseEntity.ok().build();
+    }
+
+    @PatchMapping("/change-role")
+    @Operation(
+        summary = "Alternar mi propio rol (Testing)",
+        description = "Cambia tu rol actual (ADMIN <-> CLIENT). REQUIERE RELOGUEARSE para que el nuevo token tenga el rol actualizdo.",
+        responses = {
+            @ApiResponse(responseCode = "200", description = "Rol cambiado exitosamente. Por favor, vuelva a iniciar sesión."),
+            @ApiResponse(responseCode = "404", description = "Usuario no encontrado en la base de datos (Token desincronizado).", content = @Content(schema = @Schema(implementation = ProblemDetail.class)))
+        }
+    )
+    public ResponseEntity<Void> switchMyRole(Authentication authentication, @RequestHeader("Authorization") String authHeader) {
+        changeRoleUseCase.changeRole(
+                new ChangeRoleCommand(
+                    authentication.getName(),
+                    authHeader.replace("Bearer ", "")
+                )
+        );
         return ResponseEntity.ok().build();
     }
 }
