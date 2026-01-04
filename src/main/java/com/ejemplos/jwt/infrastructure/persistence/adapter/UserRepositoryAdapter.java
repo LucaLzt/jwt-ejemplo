@@ -10,6 +10,14 @@ import org.springframework.stereotype.Component;
 
 import java.util.Optional;
 
+/**
+ * Adaptador de Persistencia para la gestión de Usuarios.
+ * <p>
+ * Implementa el puerto {@link UserRepository} utilizando Spring Data JPA.
+ * Su responsabilidad es traducir las llamadas del dominio a operaciones de base de datos
+ * y mapear los resultados (Entidades) de vuelta a objetos de dominio.
+ * </p>
+ */
 @Component
 @RequiredArgsConstructor
 public class UserRepositoryAdapter implements UserRepository {

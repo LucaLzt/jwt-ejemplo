@@ -11,6 +11,12 @@ import org.springframework.stereotype.Component;
 
 import java.util.Optional;
 
+/**
+ * Adaptador de Persistencia para los tokens de recuperación de contraseña.
+ * <p>
+ * Implementa {@link RecoveryTokenRepository} para conectar el dominio con la base de datos MySQL.
+ * </p>
+ */
 @Component
 @RequiredArgsConstructor
 public class RecoveryTokenAdapter implements RecoveryTokenRepository {

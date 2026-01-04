@@ -5,6 +5,13 @@ import lombok.*;
 
 import java.time.Instant;
 
+/**
+ * Entidad JPA para la tabla 'recovery_tokens'.
+ * <p>
+ * Persiste los tokens de un solo uso generados durante el flujo de
+ * recuperación de contraseña.
+ * </p>
+ */
 @Entity
 @Table(name = "recovery_tokens")
 @Getter
@@ -28,5 +35,4 @@ public class RecoveryTokenEntity {
     private Instant expiresAt;
 
     private boolean used;
-
 }

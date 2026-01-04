@@ -8,6 +8,12 @@ import com.ejemplos.jwt.infrastructure.persistence.repository.SpringDataRevokedT
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
+/**
+ * Adaptador de Persistencia para la Lista Negra de Tokens.
+ * <p>
+ * Implementa {@link RevokedTokenRepository} delegando en Spring Data JPA.
+ * </p>
+ */
 @Component
 @RequiredArgsConstructor
 public class RevokedTokenRepositoryAdapter implements RevokedTokenRepository {

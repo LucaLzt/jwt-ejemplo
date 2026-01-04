@@ -5,6 +5,13 @@ import lombok.*;
 
 import java.time.Instant;
 
+/**
+ * Entidad JPA para la tabla 'revoked_tokens' (Blacklist).
+ * <p>
+ * Almacena los identificadores (JTI) de los tokens que han sido invalidados
+ * explícitamente antes de su expiración natural.
+ * </p>
+ */
 @Entity
 @Table(name = "revoked_tokens")
 @Getter
@@ -30,5 +37,4 @@ public class RevokedTokenEntity {
 
     @Column(nullable = false, name = "created_at")
     private Instant createdAt;
-
 }

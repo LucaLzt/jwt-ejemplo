@@ -6,6 +6,13 @@ import lombok.*;
 
 import java.time.Instant;
 
+/**
+ * Entidad JPA que representa la tabla 'users' en la base de datos.
+ * <p>
+ * Es la proyección de persistencia del modelo de dominio {@code User}.
+ * Aquí definimos las restricciones de columnas (nullable, unique, etc.).
+ * </p>
+ */
 @Entity
 @Table(name = "users")
 @Getter
@@ -43,5 +50,4 @@ public class UserEntity {
 
     @Column(nullable = false)
     private Instant updatedAt;
-
 }

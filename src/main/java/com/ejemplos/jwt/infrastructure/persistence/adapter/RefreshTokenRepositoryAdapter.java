@@ -10,6 +10,12 @@ import org.springframework.stereotype.Component;
 
 import java.util.Optional;
 
+/**
+ * Adaptador de Persistencia para Refresh Tokens.
+ * <p>
+ * Conecta el puerto de dominio {@link RefreshTokenRepository} con el repositorio JPA real.
+ * </p>
+ */
 @Component
 @RequiredArgsConstructor
 public class RefreshTokenRepositoryAdapter implements RefreshTokenRepository {
