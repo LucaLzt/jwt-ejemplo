@@ -6,6 +6,14 @@ import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
 
+/**
+ * Adaptador de Infraestructura para el envío real de correos mediante SMTP.
+ * <p>
+ * Implementa el puerto de salida {@link EmailNotificationPort}, desacoplando
+ * al dominio de la librería 'JavaMailSender'.
+ * Si mañana cambiamos a SendGrid o Amazon SES, solo tocamos esta clase.
+ * </p>
+ */
 @Service
 @RequiredArgsConstructor
 public class SmtpEmailAdapter implements EmailNotificationPort {
@@ -16,8 +24,8 @@ public class SmtpEmailAdapter implements EmailNotificationPort {
     public void sendRecoveryEmail(String to, String link) {
         String subject = "Password Reset Request";
         String body = "To reset your password, click the following link:\n" + link +
-                      "\n\nIf you did not request a password reset, please ignore this email." +
-                      "\nThis link will expire in 15 minutes.";
+                "\n\nIf you did not request a password reset, please ignore this email." +
+                "\nThis link will expire in 15 minutes.";
 
         sendBasicEmail(to, subject, body);
     }

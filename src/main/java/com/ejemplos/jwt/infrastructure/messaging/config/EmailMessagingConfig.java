@@ -7,17 +7,13 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 /**
- * Configuración específica del módulo de Email Reset Password.
- *
- * Esta clase define:
- *  - La queue principal donde se encolan los emails de recuperación
- *  - La DLQ donde terminan mensajes fallidos
- *  - El exchange normal del módulo
- *  - Los bindings correspondientes
- *  - El uso del DLX global definido en RabbitInfraConfig
- *
- * Toda la lógica de infraestructura (RabbitTemplate, ListenerFactory, DLX global, etc.)
- * está ubicada en RabbitInfraConfig, por separación de responsabilidades.
+ * Configuración de la topología del módulo de Emails.
+ * <p>
+ * Define la estructura física en RabbitMQ:
+ * - Queue principal (con redirección a DLX en caso de fallo).
+ * - Dead Letter Queue (DLQ) para inspección manual.
+ * - Bindings para conectar el Exchange con la Queue.
+ * </p>
  */
 @Configuration
 public class EmailMessagingConfig {
@@ -39,12 +35,12 @@ public class EmailMessagingConfig {
 
     /**
      * Dead Letter Exchange (DLX) global.
-     *
+     * <p>
      * Lo inyectamos usando @Qualifier porque hay varios TopicExchange definidos
      * en la aplicación, y queremos específicamente el exchange declarado como:
      *
-     *   @Bean public TopicExchange appDlx()
-     *
+     * @Bean public TopicExchange appDlx()
+     * <p>
      * Este DLX es compartido por todos los módulos del sistema.
      */
     private final TopicExchange dlx;
@@ -54,15 +50,9 @@ public class EmailMessagingConfig {
     }
 
     /**
-     * Queue principal del módulo.
-     *
-     * Configuraciones importantes:
-     *  - durable(true): persiste tras reinicios del broker
-     *  - x-dead-letter-exchange: DLX global
-     *  - x-dead-letter-routing-key: routing key hacia la DLQ del módulo
-     *
-     * Esto asegura que los mensajes fallidos NO se pierdan, sino que terminen
-     * en la DLQ correspondiente para su posterior inspección.
+     * Cola principal.
+     * Configurada con argumentos "x-dead-letter" para que RabbitMQ sepa
+     * a dónde enviar el mensaje si el consumidor lo rechaza definitivamente.
      */
     @Bean
     public Queue emailResetQueue() {
@@ -74,10 +64,8 @@ public class EmailMessagingConfig {
     }
 
     /**
-     * Dead Letter Queue (DLQ) del módulo.
-     *
-     * Se usa para almacenar mensajes que fallaron todos los reintentos.
-     * Esta cola NO tiene DLX ni reintentos adicionales.
+     * Cola de mensajes muertos (DLQ).
+     * Aquí terminan los mensajes "tóxicos" para que no bloqueen el sistema.
      */
     @Bean
     public Queue emailResetDlq() {
@@ -88,7 +76,7 @@ public class EmailMessagingConfig {
 
     /**
      * Exchange principal de este módulo.
-     *
+     * <p>
      * Los productores envían a este exchange usando la routing key definida
      * en emailRecoveryPasswordRoutingKey.
      */
@@ -99,12 +87,12 @@ public class EmailMessagingConfig {
 
     /**
      * Binding entre la queue principal y el exchange del módulo.
-     *
+     * <p>
      * Esta regla indica:
-     *   exchange: email.ex
-     *   routing-key: email.reset-password
-     *   destino: queue email.reset-password.q
-     *
+     * exchange: email.ex
+     * routing-key: email.reset-password
+     * destino: queue email.reset-password.q
+     * <p>
      * Es decir, todo mensaje publicado con esa routing key llega a la queue.
      */
     @Bean

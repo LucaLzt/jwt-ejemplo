@@ -10,7 +10,8 @@ public interface EmailNotificationPort {
 
     /**
      * Envía un correo con el enlace de recuperación de contraseña.
-     * @param to Destinatario (email del usuario).
+     *
+     * @param to   Destinatario (email del usuario).
      * @param link Enlace completo (incluyendo el token) para resetear la clave.
      */
     void sendRecoveryEmail(String to, String link);

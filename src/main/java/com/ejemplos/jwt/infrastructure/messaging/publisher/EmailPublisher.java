@@ -10,6 +10,13 @@ import org.springframework.stereotype.Service;
 
 import java.util.UUID;
 
+/**
+ * Publicador de mensajes para eventos de correo electrónico.
+ * <p>
+ * Se encarga de poner el mensaje en el Exchange correcto de RabbitMQ.
+ * Utiliza 'CorrelationData' para poder rastrear la confirmación (ACK) del broker.
+ * </p>
+ */
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -23,6 +30,10 @@ public class EmailPublisher {
 
     private final RabbitTemplate rabbitTemplate;
 
+    /**
+     * Publica un evento de solicitud de email de recuperación.
+     * Es una operación asíncrona ("Fire and Forget" para el cliente HTTP).
+     */
     public void sendEmailPasswordReset(String to, String link) {
         EmailRequest recoveryEmailDTO = new EmailRequest(to, link);
         var id = UUID.randomUUID().toString();
@@ -33,7 +44,7 @@ public class EmailPublisher {
                 emailRecoveryPasswordExchange,
                 emailRecoveryPasswordRoutingKey,
                 recoveryEmailDTO,
-                new CorrelationData(id)
+                new CorrelationData(id)// ID para tracking
         );
     }
 }

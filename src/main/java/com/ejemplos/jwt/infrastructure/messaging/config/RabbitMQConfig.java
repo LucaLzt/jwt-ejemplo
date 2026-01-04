@@ -16,15 +16,16 @@ import org.springframework.context.annotation.Configuration;
 
 
 /**
- * Configuración central de RabbitMQ para toda la aplicación.
+ * Configuración central de infraestructura RabbitMQ.
  * <p>
- * Esta clase define:
- * - El MessageConverter (JSON)
- * - El RabbitTemplate (publisher confirms + returns)
- * - La fábrica de listeners con retry + backoff + DLX
- * <p>
- * Nada de lógica de colas particulares va aquí.
- * Eso se define en clases de configuración por módulo (ej: EmailMessagingConfig).
+ * Define los componentes transversales como:
+ * <ul>
+ * <li>Serialización JSON (para no enviar bytes crudos).</li>
+ * <li>Conexión robusta (Publisher Confirms).</li>
+ * <li>Política de Reintentos (Retries) y manejo de errores.</li>
+ * </ul>
+ * No define colas específicas, solo la "tubería".
+ * </p>
  */
 @Configuration
 @Slf4j
@@ -33,6 +34,10 @@ public class RabbitMQConfig {
     @Value("${rabbitmq.dlx.name}")
     private String dlxName;
 
+    /**
+     * Dead Letter Exchange (DLX) Global.
+     * A donde van a morir los mensajes que fallaron todos los reintentos.
+     */
     @Bean
     public TopicExchange appDlx() {
         return new TopicExchange(dlxName);
@@ -43,6 +48,10 @@ public class RabbitMQConfig {
         return new Jackson2JsonMessageConverter();
     }
 
+    /**
+     * Configura el template de envío con confirmaciones (ACKs).
+     * Esto es vital para saber si RabbitMQ recibió el mensaje y no perder datos.
+     */
     @Bean
     public RabbitTemplate rabbitTemplate(CachingConnectionFactory connectionFactory, MessageConverter messageConverter) {
 
@@ -79,6 +88,15 @@ public class RabbitMQConfig {
         return rabbitTemplate;
     }
 
+    /**
+     * Fábrica de Listeners con esteroides (Retry + Backoff).
+     * <p>
+     * Configura el comportamiento cuando un consumidor lanza una excepción:
+     * 1. Reintenta 5 veces.
+     * 2. Espera exponencialmente (1s, 2s, 4s...).
+     * 3. Si sigue fallando, manda el mensaje a la DLQ (RejectAndDontRequeue).
+     * </p>
+     */
     @Bean
     public SimpleRabbitListenerContainerFactory rabbitListenerContainerFactory(ConnectionFactory connectionFactory, MessageConverter messageConverter) {
         var factory = new SimpleRabbitListenerContainerFactory();
