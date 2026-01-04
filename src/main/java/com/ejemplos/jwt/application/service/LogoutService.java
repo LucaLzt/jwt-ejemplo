@@ -13,6 +13,14 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;
 
+/**
+ * Servicio para el cierre de sesión seguro.
+ * <p>
+ * Implementa una estrategia de "Defensa en Profundidad":
+ * 1. Invalida el Refresh Token en la BD (para que no pueda sacar más tokens).
+ * 2. Invalida el Access Token actual en una Blacklist (para que no pueda usar el tiempo que le queda).
+ * </p>
+ */
 @Service
 @RequiredArgsConstructor
 public class LogoutService implements LogoutUseCase {
@@ -23,6 +31,8 @@ public class LogoutService implements LogoutUseCase {
     @Override
     @Transactional
     public void logout(LogoutCommand command) {
+        // 1. Blacklist del Access Token (Seguridad Inmediata)
+        // Guardamos el JTI para que el filtro de seguridad lo rechace en futuros requests
         RevokedToken revokedToken = RevokedToken.revoke(
                 command.jti(),
                 command.email(),
@@ -31,6 +41,8 @@ public class LogoutService implements LogoutUseCase {
         );
         revokedTokenRepository.save(revokedToken);
 
+        // 2. Revocación del Refresh Token (Seguridad a Largo Plazo)
+        // Marcamos el token de base de datos como revocado
         RefreshToken storedToken = refreshTokenRepository.findByToken(command.refreshToken())
                 .orElseThrow(() -> new InvalidTokenException("Refresh token is invalid or does not exist"));
 

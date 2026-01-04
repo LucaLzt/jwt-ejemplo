@@ -16,6 +16,13 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+/**
+ * Servicio principal de autenticación.
+ * <p>
+ * Su responsabilidad es orquestar la verificación de credenciales y la
+ * creación de la sesión inicial (emisión del primer par de tokens).
+ * </p>
+ */
 @Service
 @RequiredArgsConstructor
 public class LoginService implements LoginUseCase {
@@ -29,9 +36,11 @@ public class LoginService implements LoginUseCase {
     @Transactional
     public LoginResult login(LoginCommand command) {
 
+        // 1. Buscar usuario (Si no existe, lanzamos excepción específica)
         User user = userRepository.findByEmail(command.email())
                 .orElseThrow(() -> new UserNotFoundException("User not found with email: " + command.email()));
 
+        // 2. Verificar contraseña usando el puerto (abstracción del encoder)
         boolean matches = passwordEncoderPort.matches(
                 command.password(),
                 user.getPassword()
@@ -41,11 +50,16 @@ public class LoginService implements LoginUseCase {
             throw new InvalidCredentialsException();
         }
 
+        // 3. Generación de Tokens
+        // El Access Token no se guarda en BD (es stateless)
         String accessToken = jwtTokenProviderPort.generateAccessToken(user);
+
+        // El Refresh Token SÍ se guarda en BD (es stateful para poder revocarlo)
         GeneratedToken refreshTokenData = jwtTokenProviderPort.generateRefreshToken(user);
 
         LoginResult result = new LoginResult(accessToken, refreshTokenData.token());
 
+        // 4. Persistencia de la sesión
         RefreshToken refreshToken = RefreshToken.create(
                 user.getId(),
                 refreshTokenData.token(),
@@ -55,6 +69,5 @@ public class LoginService implements LoginUseCase {
         refreshTokenRepository.save(refreshToken);
 
         return result;
-
     }
 }
