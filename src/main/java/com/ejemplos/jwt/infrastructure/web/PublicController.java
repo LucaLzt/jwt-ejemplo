@@ -4,6 +4,13 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.web.bind.annotation.*;
 
+/**
+ * Controlador para probar endpoints accesibles sin autenticación.
+ * <p>
+ * Útil para verificar que la configuración de seguridad (SecurityConfig)
+ * está permitiendo el tráfico público correctamente (whitelisting).
+ * </p>
+ */
 @RestController
 @RequestMapping("api/public")
 @Tag(name = "Endpoints Públicos", description = "Endpoints de prueba accesibles sin autenticación para verificar la configuración de seguridad")

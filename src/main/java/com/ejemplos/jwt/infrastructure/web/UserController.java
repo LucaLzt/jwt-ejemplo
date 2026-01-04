@@ -12,6 +12,13 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+/**
+ * Controlador de ejemplo protegido por Roles.
+ * <p>
+ * Demuestra el uso de la anotación {@code @PreAuthorize} para restringir el acceso
+ * basándose en los 'Authorities' cargados en el token JWT.
+ * </p>
+ */
 @RestController
 @RequestMapping("api/users")
 @Tag(name = "Usuarios (Protegido)", description = "Endpoints de prueba para validar autorización basada en Roles (RBAC)")

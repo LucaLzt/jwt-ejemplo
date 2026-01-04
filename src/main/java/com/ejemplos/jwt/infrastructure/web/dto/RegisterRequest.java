@@ -5,6 +5,13 @@ import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
+/**
+ * DTO de entrada para el registro de nuevos usuarios.
+ * <p>
+ * Representa el cuerpo JSON esperado en el endpoint POST /auth/register.
+ * Incluye validaciones básicas de formato (Jakarta Validation).
+ * </p>
+ */
 public record RegisterRequest(
         @Schema(description = "Nombre de pila del usuario", example = "Jon")
         @NotBlank(message = "The first name is required")

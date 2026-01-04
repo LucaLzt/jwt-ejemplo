@@ -18,6 +18,13 @@ import java.net.URI;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * Interceptor global de excepciones.
+ * <p>
+ * Transforma las excepciones de Dominio (Java) en respuestas HTTP JSON estandarizadas (RFC 7807 ProblemDetail).
+ * Esto evita que el cliente reciba stack traces feos o códigos 500 genéricos.
+ * </p>
+ */
 @RestControllerAdvice
 public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 

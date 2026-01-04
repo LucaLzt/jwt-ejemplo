@@ -20,6 +20,13 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.Instant;
 
+/**
+ * Controlador REST para la gestión de la identidad y sesiones.
+ * <p>
+ * Expone los endpoints públicos (Registro, Login) y protegidos (Logout, Refresh)
+ * relacionados con la autenticación.
+ * </p>
+ */
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
