@@ -5,6 +5,14 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
+/**
+ * Adaptador de infraestructura para el hashing de contraseñas.
+ * <p>
+ * Implementa el puerto {@link PasswordEncoderPort}, delegando la lógica real
+ * al bean {@link PasswordEncoder} de Spring (generalmente BCrypt).
+ * Así, el dominio no depende de la librería de Spring Security directamente.
+ * </p>
+ */
 @Component
 @RequiredArgsConstructor
 public class PasswordEncoderAdapter implements PasswordEncoderPort {

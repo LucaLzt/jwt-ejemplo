@@ -8,6 +8,12 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
+/**
+ * Servicio estándar de Spring Security para cargar usuarios desde la base de datos.
+ * <p>
+ * Es utilizado internamente por el AuthenticationManager para validar credenciales.
+ * </p>
+ */
 @Service
 @RequiredArgsConstructor
 public class CustomUserDetailsService implements UserDetailsService {
@@ -16,8 +22,11 @@ public class CustomUserDetailsService implements UserDetailsService {
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+        // Buscamos en nuestro repositorio de dominio
         User user = userRepository.findByEmail(username)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found with email: " + username));
+
+        // Devolvemos el adaptador
         return new SecurityUser(user);
     }
 }

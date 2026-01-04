@@ -15,6 +15,12 @@ import org.springframework.stereotype.Component;
 import java.io.IOException;
 import java.net.URI;
 
+/**
+ * Manejador personalizado para errores de Autorización (403 Forbidden).
+ * <p>
+ * Se ejecuta cuando un usuario autenticado intenta entrar a una zona para la que no tiene rol (ej: Cliente -> Zona Admin).
+ * </p>
+ */
 @Component
 @RequiredArgsConstructor
 public class CustomAccessDeniedHandler implements AccessDeniedHandler {

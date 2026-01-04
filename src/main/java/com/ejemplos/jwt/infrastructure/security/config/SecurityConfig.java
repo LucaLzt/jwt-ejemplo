@@ -23,6 +23,12 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.util.List;
 
+/**
+ * Configuración maestra de Spring Security.
+ * <p>
+ * Define la cadena de filtros (SecurityFilterChain) que gobierna la seguridad de la aplicación.
+ * </p>
+ */
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
@@ -37,12 +43,21 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http, CorsConfigurationSource corsConfigurationSource) throws Exception {
         http
+                // 1. Deshabilitar CSRF (No necesario en APIs Stateless sin cookies de sesión)
                 .cors(Customizer.withDefaults())
+
+                // 2. Configurar CORS (Permitir peticiones desde el Frontend)
                 .csrf(AbstractHttpConfigurer::disable)
+
+                // 3. Definir la gestión de sesiones como STATELESS
+                // Spring no creará ni usará JSESSIONID. Dependemos totalmente del token.
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
+
+                // 4. Definir reglas de acceso a URLs (Whitelisting)
                 .authorizeHttpRequests(auth -> auth
+                        // Endpoints Públicos
                         .requestMatchers(
                                 "/api/auth/login",
                                 "/api/auth/register",
@@ -55,22 +70,33 @@ public class SecurityConfig {
                         .requestMatchers("/api/public/**").permitAll()
                         .requestMatchers("/error").permitAll()
 
+                        // Documentación (Swagger)
                         .requestMatchers("/v3/api-docs/**").permitAll()
                         .requestMatchers("/swagger-ui/**").permitAll()
                         .requestMatchers("/swagger-ui.html").permitAll()
 
-                        .requestMatchers("/api/auth/logout").authenticated()
+                        // Endpoints Protegidos
+                        .requestMatchers("/api/auth/logout").authenticated() // Requiere token para saber a quién desloguear
+
+                        // Cualquier otra cosa requiere autenticación por defecto
                         .anyRequest().authenticated()
                 )
+
+                // 5. Configurar manejo de excepciones (JSON responses)
                 .exceptionHandling(exception -> exception
                         .authenticationEntryPoint(customAuthenticationEntryPoint)
                         .accessDeniedHandler(customAccessDeniedHandler)
                 )
+
+                // 6. Configurar el UserDetailsService personalizado
                 .userDetailsService(userDetailsService)
+
+                // 7. Insertar nuestro filtro JWT antes del filtro de usuario/password estándar
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
         return http.build();
     }
 
+    /** Configuración de CORS para permitir peticiones desde Angular/React local. */
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
@@ -84,6 +110,7 @@ public class SecurityConfig {
         return source;
     }
 
+    /** Bean global para encriptación de contraseñas. */
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
