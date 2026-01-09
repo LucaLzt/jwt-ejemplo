@@ -170,7 +170,6 @@ public class JwtTokenProviderAdapter implements JwtTokenProviderPort {
      * Convierte un JWT crudo en un objeto de Autenticación oficial de Spring.
      * Esto permite usar anotaciones como @PreAuthorize("hasRole('ADMIN')") en los controladores.
      */
-    @Override
     public Authentication getAuthentication(String token) {
         Claims claims = getAllClaims(token);
         String username = claims.getSubject();

@@ -1,7 +1,6 @@
 package com.ejemplos.jwt.application.ports.out;
 
 import com.ejemplos.jwt.domain.model.User;
-import org.springframework.security.core.Authentication;
 
 import java.time.Instant;
 
@@ -24,9 +23,6 @@ public interface JwtTokenProviderPort {
 
     /** Valida matemáticamente y por fecha un Refresh Token. */
     boolean isRefreshTokenValid(String token);
-
-    /** Convierte un token válido en un objeto de autenticación de Spring Security. */
-    Authentication getAuthentication(String token);
 
     /** Extrae el email (subject) del token. */
     String getUsernameFromToken(String token);

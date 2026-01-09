@@ -33,7 +33,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private static final String AUTH_HEADER = "Authorization";
     private static final String BEARER_PREFIX = "Bearer ";
 
-    private final JwtTokenProviderPort jwtTokenProviderPort;
+    private final JwtTokenProviderAdapter jwtTokenProviderAdapter;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
@@ -48,14 +48,14 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         String token = authHeader.substring(BEARER_PREFIX.length());
 
         // 2. ¿Es válido? (Firma, Expiración, Blacklist)
-        if (!jwtTokenProviderPort.isAccessTokenValid(token)) {
+        if (!jwtTokenProviderAdapter.isAccessTokenValid(token)) {
             filterChain.doFilter(request, response);
             return;
         }
 
         // 3. Autenticar en el contexto
         if (SecurityContextHolder.getContext().getAuthentication() == null) {
-            var authentication = jwtTokenProviderPort.getAuthentication(token);
+            var authentication = jwtTokenProviderAdapter.getAuthentication(token);
 
             if (authentication instanceof AbstractAuthenticationToken authToken) {
                 authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
