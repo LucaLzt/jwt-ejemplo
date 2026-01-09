@@ -8,7 +8,7 @@ import java.time.Instant;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-public class RefreshTokenTest {
+class RefreshTokenTest {
 
     @Test
     void shouldBeCreateValidRefreshToken() {
