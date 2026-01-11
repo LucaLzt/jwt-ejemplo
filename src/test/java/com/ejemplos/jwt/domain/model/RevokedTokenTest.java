@@ -1,5 +1,6 @@
 package com.ejemplos.jwt.domain.model;
 
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
@@ -9,7 +10,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 class RevokedTokenTest {
 
     @Test
-    void shouldBeCreateRevokedToken() {
+    @DisplayName("Domain: Should correctly create a RevokedToken entity with metadata")
+    void shouldCreateRevokedToken() {
         // GIVEN
         String jti = "sample-jti";
         String subject = "test@demo.com",
