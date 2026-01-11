@@ -1,5 +1,6 @@
 package com.ejemplos.jwt.domain.model;
 
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
@@ -10,7 +11,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 class RecoveryTokenTest {
 
     @Test
-    void shouldBeCreateValidToken() {
+    @DisplayName("Domain: Should create a valid recovery token with correct attributes")
+    void shouldCreateValidToken() {
         // GIVEN
         String email = "test@demo.com";
         String tokenString = "sample-token";
@@ -29,6 +31,7 @@ class RecoveryTokenTest {
     }
 
     @Test
+    @DisplayName("Domain: A fresh, unused, and unexpired token should be valid")
     void shouldBeValidIfNotUsedAndNotExpired() {
         // GIVEN
         RecoveryToken token = RecoveryToken.create("test@demo.com", "sample-token", 600);
@@ -41,6 +44,7 @@ class RecoveryTokenTest {
     }
 
     @Test
+    @DisplayName("Domain: Marking a token as used should make it invalid")
     void shouldBeInvalidIfMarkedAsUsed() {
         // GIVEN
         RecoveryToken token = RecoveryToken.create("test@demo.com", "sample-token", 600);
@@ -54,6 +58,7 @@ class RecoveryTokenTest {
     }
 
     @Test
+    @DisplayName("Domain: An expired token should be considered invalid")
     void shouldBeInvalidIfExpired() {
         // GIVEN
         Instant yesterday = Instant.now().minus(1, ChronoUnit.DAYS);

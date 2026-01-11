@@ -1,6 +1,7 @@
 package com.ejemplos.jwt.domain.model;
 
 import com.ejemplos.jwt.domain.exception.personalized.InvalidTokenException;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
@@ -11,7 +12,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 class RefreshTokenTest {
 
     @Test
-    void shouldBeCreateValidRefreshToken() {
+    @DisplayName("Domain: Should create a valid refresh token with future expiration")
+    void shouldCreateValidRefreshToken() {
         // GIVEN
         Long userId = 1L;
         String token = "sample-refresh-token";
@@ -36,7 +38,8 @@ class RefreshTokenTest {
     }
 
     @Test
-    void shouldRevokedTokenManually() {
+    @DisplayName("Domain: Manual revocation should mark the token as invalid")
+    void shouldRevokeTokenManually() {
         // GIVEN
         Long userId = 1L;
         String token = "sample-refresh-token";
@@ -57,7 +60,8 @@ class RefreshTokenTest {
     }
 
     @Test
-    void shouldBeRotateToken() {
+    @DisplayName("Domain: Token rotation should invalidate the old token and link the replacement")
+    void shouldRotateToken() {
         // GIVEN
         Long userId = 1L;
         String token = "sample-refresh-token";
@@ -81,6 +85,7 @@ class RefreshTokenTest {
     }
 
     @Test
+    @DisplayName("Security: Attempting to rotate an already revoked token should throw exception (Reuse Detection)")
     void shouldThrowIfRotatingRevokedToken() {
         // GIVEN
         Long userId = 1L;
@@ -103,7 +108,8 @@ class RefreshTokenTest {
     }
 
     @Test
-    void shouldBeCheckIfTokenIsExpired() {
+    @DisplayName("Domain: A token with a past expiration date should be considered invalid")
+    void shouldCheckIfTokenIsExpired() {
         // GIVEN
         Long userId = 1L;
         String token = "sample-refresh-token";
