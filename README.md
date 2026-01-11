@@ -39,6 +39,15 @@ se invalida toda la cadena de sesiones del usuario.
 
 ---
 
+### Estrategia de Testing
+Este proyecto garantiza la fiabilidad del código mediante una suite de pruebas automatizadas:
+- **Tests Unitarios**: Pruebas aisladas para la lógica de dominio, servicios y validaciones utilizando **JUnit 5** y **Mockito**.
+- **Tests de Integración (Testcontainers)**:
+    - Se utilizan contenedores Docker efímeros para levantar instancias reales de **MySQL** y **RabbitMQ** durante la ejecución de los tests.
+    - Esto asegura que las pruebas de integración (`*IT.java`) se ejectuen en un entorno idéntico al de producción, validando flujos completos (persistencia, mensajería y seguridad) sin depender de mocks en la infraestructura.
+
+---
+
 ### Diagrama de Arquitectura
 1. **Flujo de Autenticación y Rotación de Tokens**: Este sistema representa cómo el sistema maneja el inicio de sesión
 y la renovación segura de tokens.
@@ -200,6 +209,7 @@ La documentación completa y ejecutable está disponible en Swagger UI
 - `POST /api/auth/login` - Inicio de sesión (Retorna Access + Refresh Token).
 - `POST /api/auth/refresh` - Solicitar nuevo Access Token.
 - `POST /api/auth/logout` - Cerrar sesión (Requiere Auth Header).
+- `PATCH /api/auth/change-role` - **Testing**: Alterna el rol del usuario actual (`ADMIN` <-> `CLIENT`) para probar permisos sin crear múltiples cuentas.
 
 **Recovery**
 - `POST /api/auth/recovery` - Solicitar email de recuperación.
